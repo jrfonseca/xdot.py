@@ -144,6 +144,7 @@ class EllipseShape(Shape):
 		cr.save()
 		cr.translate(self.x0, self.y0)
 		cr.scale(self.w, self.h)
+		cr.move_to(1.0, 0.0)
 		cr.arc(0.0, 0.0, 1.0, 0, 2.0*math.pi)
 		cr.restore()
 		if self.filled:
