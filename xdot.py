@@ -645,11 +645,12 @@ class DotWindow(gtk.Window):
 	def get_url(self, x, y):
 		rect = self.area.get_allocation()
 		x -= 0.5*rect.width
-		y = 0.5*rect.height - y
+		y -= 0.5*rect.height
 		x /= self.zoom_ratio
 		y /= self.zoom_ratio
 		x += self.x
 		y += self.y
+		y = self.height - y
 
 		for hyperlink in self.hyperlinks:
 			if hyperlink.hit(x, y):
