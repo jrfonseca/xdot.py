@@ -56,10 +56,6 @@ class Shape:
 		"""Draw this shape with the given cairo context"""
 		raise NotImplementedError
 
-	def boundingbox(self):
-		"""Get the bounding box of this shape."""
-		raise NotImplementedError
-
 
 class TextShape(Shape):
 	
@@ -222,31 +218,63 @@ class Element(CompoundShape):
 	def get_url(self, x, y):
 		return None
 
+	def get_jump(self, x, y):
+		return None
+
 
 class Node(Element):
 
 	def __init__(self, x, y, w, h, shapes, url):
 		Element.__init__(self, shapes)
 		
-		self.x1 = x - w/2
-		self.y1 = y - h/2
-		self.x2 = x + w/2
-		self.y2 = y + h/2
+		self.x = x
+		self.y = y
+
+		self.x1 = x - 0.5*w
+		self.y1 = y - 0.5*h
+		self.x2 = x + 0.5*w
+		self.y2 = y + 0.5*h
 		
 		self.url = url
+
+	def is_inside(self, x, y):
+		return self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2
 
 	def get_url(self, x, y):
 		if self.url is None:
 			return None
 		#print (x, y), (self.x1, self.y1), "-", (self.x2, self.y2)
-		if self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2:
+		if self.is_inside(x, y):
 			return self.url
 		return None
+
+	def get_jump(self, x, y):
+		if self.is_inside(x, y):
+			return self.x, self.y
+		return None
+
+
+def square_distance(x1, y1, x2, y2):
+	deltax = x2 - x1
+	deltay = y2 - y1
+	return deltax*deltax + deltay*deltay
 
 
 class Edge(Element):
 
-	pass
+	def __init__(self, points, shapes):
+		Element.__init__(self, shapes)
+
+		self.points = points
+
+	RADIUS = 10
+
+	def get_jump(self, x, y):
+		if square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS:
+			return self.points[-1]
+		if square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS:
+			return self.points[0]
+		return None
 
 
 class Graph(Shape):
@@ -278,6 +306,17 @@ class Graph(Shape):
 			url = node.get_url(x, y)
 			if url is not None:
 				return url
+		return None
+
+	def get_jump(self, x, y):
+		for edge in self.edges:
+			jump = edge.get_jump(x, y)
+			if jump is not None:
+				return jump
+		for node in self.nodes:
+			jump = node.get_jump(x, y)
+			if jump is not None:
+				return jump
 		return None
 
 
@@ -441,7 +480,7 @@ class XDotParser:
 		for node in graph.get_node_list():
 			if node.pos is None:
 				continue
-			x, y = map(float, node.pos.split(","))
+			x, y = self.parse_node_pos(node.pos)
 			w = float(node.width)*72
 			h = float(node.height)*72
 			shapes = []
@@ -454,15 +493,35 @@ class XDotParser:
 				nodes.append(Node(x, y, w, h, shapes, url))
 
 		for edge in graph.get_edge_list():
+			if edge.pos is None:
+				continue
+			points = self.parse_edge_pos(edge.pos)	
 			shapes = []
 			for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
 				if hasattr(edge, attr):
 					parser = XDotAttrParser(self, getattr(edge, attr))
 					shapes.extend(parser.parse())
 			if shapes:
-				edges.append(Edge(shapes))
+				edges.append(Edge(points, shapes))
 
 		return Graph(width, height, nodes, edges)
+
+	def parse_node_pos(self, pos):
+		x, y = pos.split(",")
+		return self.transform(float(x), float(y))
+
+	def parse_edge_pos(self, pos):
+		points = []
+		for entry in pos.split(' '):
+			fields = entry.split(',')
+			try:
+				x, y = fields
+			except ValueError:
+				# TODO: handle start/end points
+				continue
+			else:
+				points.append(self.transform(float(x), float(y)))
+		return points
 
 	def transform(self, x, y):
 		# XXX: this is not the right place for this code
@@ -472,6 +531,7 @@ class XDotParser:
 
 
 class DotWidget(gtk.DrawingArea):
+	"""PyGTK widget that draws dot graphs."""
 
 	__gsignals__ = {
 		'expose-event': 'override',
@@ -613,6 +673,13 @@ class DotWidget(gtk.DrawingArea):
 			self.emit('clicked', unicode(url), event)
 			return True
 
+		jump = self.get_jump(x, y)
+		x, y = self.window2graph(x, y)
+		if jump is not None:
+			jumpx, jumpy = jump
+			self.x += jumpx - x
+			self.y += jumpy - y
+			self.queue_draw()
 		return False
 
 	def on_area_button_release(self, area, event):
@@ -652,7 +719,7 @@ class DotWidget(gtk.DrawingArea):
 
 		return True
 
-	def get_url(self, x, y):
+	def window2graph(self, x, y):
 		rect = self.get_allocation()
 		x -= 0.5*rect.width
 		y -= 0.5*rect.height
@@ -660,8 +727,15 @@ class DotWidget(gtk.DrawingArea):
 		y /= self.zoom_ratio
 		x += self.x
 		y += self.y
-		y = self.graph.height - y
+		return x, y
+
+	def get_url(self, x, y):
+		x, y = self.window2graph(x, y)
 		return self.graph.get_url(x, y)
+
+	def get_jump(self, x, y):
+		x, y = self.window2graph(x, y)
+		return self.graph.get_jump(x, y)
 
 
 class DotWindow(gtk.Window):
