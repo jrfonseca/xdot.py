@@ -3,13 +3,14 @@
 
 __author__ = "Jose Fonseca"
 
-__version__ = "0.2"
+__version__ = "0.3"
 
 
 import sys
 import subprocess
 import math
 
+import gobject
 import gtk
 import gtk.gdk
 import gtk.keysyms
@@ -472,12 +473,15 @@ class XDotParser:
 
 class DotWidget(gtk.DrawingArea):
 
+	__gsignals__ = {
+		'expose-event': 'override',
+		'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
+	}
+
 	def __init__(self):
 		gtk.DrawingArea.__init__(self)
 
 		self.graph = Graph()
-
-		self.connect("expose_event", self.on_expose)
 
 		self.set_flags(gtk.CAN_FOCUS)
 
@@ -510,8 +514,8 @@ class DotWidget(gtk.DrawingArea):
 		self.graph = parser.parse()
 		self.zoom_image(self.zoom_ratio, center=True)
 
-	def on_expose(self, area, event):
-		cr = area.window.cairo_create()
+	def do_expose_event(self, event):
+		cr = self.window.cairo_create()
 
 		# set a clip region for the expose event
 		cr.rectangle(
@@ -606,7 +610,8 @@ class DotWidget(gtk.DrawingArea):
 		x, y = int(event.x), int(event.y)
 		url = self.get_url(x, y)
 		if url is not None:
-			return self.on_url_clicked(url, event)
+			self.emit('clicked', unicode(url), event)
+			return True
 
 		return False
 
@@ -657,9 +662,6 @@ class DotWidget(gtk.DrawingArea):
 		y += self.y
 		y = self.graph.height - y
 		return self.graph.get_url(x, y)
-
-	def on_url_clicked(self, url, event):
-		return False
 
 
 class DotWindow(gtk.Window):
@@ -722,15 +724,10 @@ class DotWindow(gtk.Window):
 
 		self.set_focus(self.widget)
 
-		self.widget.on_url_clicked = self.on_url_clicked
-
 		self.show_all()
 
 	def set_dotcode(self, dotcode):
 		self.widget.set_dotcode(dotcode)
-
-	def on_url_clicked(self, url, event):
-		return False
 
 
 def main():

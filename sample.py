@@ -11,11 +11,9 @@ class MyDotWindow(xdot.DotWindow):
 
 	def __init__(self):
 		xdot.DotWindow.__init__(self)
+		self.widget.connect('clicked', self.on_url_clicked)
 
-	def get_name(self, name):
-		return 'My Dot Window'
-
-	def on_url_clicked(self, url, event):
+	def on_url_clicked(self, widget, url, event):
 		dialog = gtk.MessageDialog(
 				parent = self, 
 				buttons = gtk.BUTTONS_OK,
