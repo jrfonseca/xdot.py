@@ -470,82 +470,28 @@ class XDotParser:
 		return x, y
 
 
-class DotWindow(gtk.Window):
-
-	# TODO: Make a seperate, reusable widget
-
-	ui = '''
-	<ui>
-		<toolbar name="ToolBar">
-			<toolitem action="ZoomIn"/>
-			<toolitem action="ZoomOut"/>
-			<toolitem action="ZoomFit"/>
-			<toolitem action="Zoom100"/>
-		</toolbar>
-	</ui>
-	'''
+class DotWidget(gtk.DrawingArea):
 
 	def __init__(self):
-		gtk.Window.__init__(self)
+		gtk.DrawingArea.__init__(self)
 
 		self.graph = Graph()
 
-		window = self
+		self.connect("expose_event", self.on_expose)
 
-		window.set_title('Dot')
-		window.set_default_size(512, 512)
-		vbox = gtk.VBox()
-		window.add(vbox)
+		self.set_flags(gtk.CAN_FOCUS)
 
-		# Create a UIManager instance
-		uimanager = self.uimanager = gtk.UIManager()
-
-		# Add the accelerator group to the toplevel window
-		accelgroup = uimanager.get_accel_group()
-		window.add_accel_group(accelgroup)
-
-		# Create an ActionGroup
-		actiongroup = gtk.ActionGroup('Actions')
-		self.actiongroup = actiongroup
-
-		# Create actions
-		actiongroup.add_actions((
-			('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, None, self.on_zoom_in),
-			('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.on_zoom_out),
-			('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.on_zoom_fit),
-			('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.on_zoom_100),
-		))
-
-		# Add the actiongroup to the uimanager
-		uimanager.insert_action_group(actiongroup, 0)
-
-		# Add a UI description
-		uimanager.add_ui_from_string(self.ui)
-
-		# Create a Toolbar
-		toolbar = uimanager.get_widget('/ToolBar')
-		vbox.pack_start(toolbar, False)
-
-		self.area = gtk.DrawingArea()
-		self.area.connect("expose_event", self.on_expose)
-		vbox.pack_start(self.area)
-
-		self.area.set_flags(gtk.CAN_FOCUS)
-		self.set_focus(self.area)
-
-		self.area.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
-		self.area.connect("button-press-event", self.on_area_button_press)
-		self.area.connect("button-release-event", self.on_area_button_release)
-		self.area.add_events(gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
-		self.area.connect("motion-notify-event", self.on_area_motion_notify)
-		self.area.connect("scroll-event", self.on_area_scroll_event)
+		self.add_events(gtk.gdk.BUTTON_PRESS_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
+		self.connect("button-press-event", self.on_area_button_press)
+		self.connect("button-release-event", self.on_area_button_release)
+		self.add_events(gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
+		self.connect("motion-notify-event", self.on_area_motion_notify)
+		self.connect("scroll-event", self.on_area_scroll_event)
 
 		self.connect('key-press-event', self.on_key_press_event)
 
 		self.x, self.y = 0.0, 0.0
 		self.zoom_ratio = 1.0
-
-		self.show_all()
 
 	def set_dotcode(self, dotcode):
 		p = subprocess.Popen(
@@ -577,7 +523,7 @@ class DotWindow(gtk.Window):
 		cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
 		cr.paint()
 
-		rect = self.area.get_allocation()
+		rect = self.get_allocation()
 		cr.translate(0.5*rect.width, 0.5*rect.height)
 		cr.scale(self.zoom_ratio, self.zoom_ratio)
 		cr.translate(-self.x, -self.y)
@@ -592,14 +538,14 @@ class DotWindow(gtk.Window):
 	def set_current_pos(self, x, y):
 		self.x = x
 		self.y = y
-		self.area.queue_draw()
+		self.queue_draw()
 
 	def zoom_image(self, zoom_ratio, center=False):
 		if center:
 			self.x = self.graph.width/2
 			self.y = self.graph.height/2
 		self.zoom_ratio = zoom_ratio
-		self.area.queue_draw()
+		self.queue_draw()
 
 	ZOOM_INCREMENT = 1.25
 
@@ -610,7 +556,7 @@ class DotWindow(gtk.Window):
 		self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
 
 	def on_zoom_fit(self, action):
-		rect = self.area.get_allocation()
+		rect = self.get_allocation()
 		zoom_ratio = min(
 			float(rect.width)/float(self.graph.width),
 			float(rect.height)/float(self.graph.height)
@@ -625,27 +571,27 @@ class DotWindow(gtk.Window):
 	def on_key_press_event(self, widget, event):
 		if event.keyval == gtk.keysyms.Left:
 			self.x -= self.POS_INCREMENT/self.zoom_ratio
-			self.area.queue_draw()
+			self.queue_draw()
 			return True
 		if event.keyval == gtk.keysyms.Right:
 			self.x += self.POS_INCREMENT/self.zoom_ratio
-			self.area.queue_draw()
+			self.queue_draw()
 			return True
 		if event.keyval == gtk.keysyms.Up:
 			self.y -= self.POS_INCREMENT/self.zoom_ratio
-			self.area.queue_draw()
+			self.queue_draw()
 			return True
 		if event.keyval == gtk.keysyms.Down:
 			self.y += self.POS_INCREMENT/self.zoom_ratio
-			self.area.queue_draw()
+			self.queue_draw()
 			return True
 		if event.keyval == gtk.keysyms.Page_Up:
 			self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
-			self.area.queue_draw()
+			self.queue_draw()
 			return True
 		if event.keyval == gtk.keysyms.Page_Down:
 			self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
-			self.area.queue_draw()
+			self.queue_draw()
 			return True
 		return False
 
@@ -689,7 +635,7 @@ class DotWindow(gtk.Window):
 			# pan the image
 			self.x += (self.prevmousex - x)/self.zoom_ratio
 			self.y += (self.prevmousey - y)/self.zoom_ratio
-			self.area.queue_draw()
+			self.queue_draw()
 			self.prevmousex = x
 			self.prevmousey = y
 		else:
@@ -702,7 +648,7 @@ class DotWindow(gtk.Window):
 		return True
 
 	def get_url(self, x, y):
-		rect = self.area.get_allocation()
+		rect = self.get_allocation()
 		x -= 0.5*rect.width
 		y -= 0.5*rect.height
 		x /= self.zoom_ratio
@@ -711,6 +657,77 @@ class DotWindow(gtk.Window):
 		y += self.y
 		y = self.graph.height - y
 		return self.graph.get_url(x, y)
+
+	def on_url_clicked(self, url, event):
+		return False
+
+
+class DotWindow(gtk.Window):
+
+	ui = '''
+	<ui>
+		<toolbar name="ToolBar">
+			<toolitem action="ZoomIn"/>
+			<toolitem action="ZoomOut"/>
+			<toolitem action="ZoomFit"/>
+			<toolitem action="Zoom100"/>
+		</toolbar>
+	</ui>
+	'''
+
+	def __init__(self):
+		gtk.Window.__init__(self)
+
+		self.graph = Graph()
+
+		window = self
+
+		window.set_title('Dot')
+		window.set_default_size(512, 512)
+		vbox = gtk.VBox()
+		window.add(vbox)
+
+		self.widget = DotWidget()
+
+		# Create a UIManager instance
+		uimanager = self.uimanager = gtk.UIManager()
+
+		# Add the accelerator group to the toplevel window
+		accelgroup = uimanager.get_accel_group()
+		window.add_accel_group(accelgroup)
+
+		# Create an ActionGroup
+		actiongroup = gtk.ActionGroup('Actions')
+		self.actiongroup = actiongroup
+
+		# Create actions
+		actiongroup.add_actions((
+			('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, None, self.widget.on_zoom_in),
+			('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
+			('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
+			('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+		))
+
+		# Add the actiongroup to the uimanager
+		uimanager.insert_action_group(actiongroup, 0)
+
+		# Add a UI description
+		uimanager.add_ui_from_string(self.ui)
+
+		# Create a Toolbar
+		toolbar = uimanager.get_widget('/ToolBar')
+		vbox.pack_start(toolbar, False)
+
+		vbox.pack_start(self.widget)
+
+		self.set_focus(self.widget)
+
+		self.widget.on_url_clicked = self.on_url_clicked
+
+		self.show_all()
+
+	def set_dotcode(self, dotcode):
+		self.widget.set_dotcode(dotcode)
 
 	def on_url_clicked(self, url, event):
 		return False
