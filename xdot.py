@@ -31,6 +31,7 @@ class Pen:
 	"""Store pen attributes."""
 
 	def __init__(self):
+		# set default attributes
 		self.color = (0.0, 0.0, 0.0, 1.0)
 		self.fillcolor = (0.0, 0.0, 0.0, 1.0)
 		self.linewidth = 1.0
@@ -211,6 +212,74 @@ class CompoundShape(Shape):
 			shape.draw(cr)
 
 
+class Element(CompoundShape):
+	"""Base class for graph nodes and edges."""
+
+	def __init__(self, shapes):
+		CompoundShape.__init__(self, shapes)
+	
+	def get_url(self, x, y):
+		return None
+
+
+class Node(Element):
+
+	def __init__(self, x, y, w, h, shapes, url):
+		Element.__init__(self, shapes)
+		
+		self.x1 = x - w/2
+		self.y1 = y - h/2
+		self.x2 = x + w/2
+		self.y2 = y + h/2
+		
+		self.url = url
+
+	def get_url(self, x, y):
+		if self.url is None:
+			return None
+		#print (x, y), (self.x1, self.y1), "-", (self.x2, self.y2)
+		if self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2:
+			return self.url
+		return None
+
+
+class Edge(Element):
+
+	pass
+
+
+class Graph(Shape):
+
+	def __init__(self, width=1, height=1, nodes=(), edges=()):
+		Shape.__init__(self)
+		
+		self.width = width
+		self.height = height
+		self.nodes = nodes
+		self.edges = edges
+
+	def get_size(self):
+		return self.width, self.height
+
+	def draw(self, cr):
+		cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
+
+		cr.set_line_cap(cairo.LINE_CAP_BUTT)
+		cr.set_line_join(cairo.LINE_JOIN_MITER)
+		
+		for edge in self.edges:
+			edge.draw(cr)
+		for node in self.nodes:
+			node.draw(cr)
+	
+	def get_url(self, x, y):
+		for node in self.nodes:
+			url = node.get_url(x, y)
+			if url is not None:
+				return url
+		return None
+
+
 class XDotAttrParser:
 	"""Parser for xdot drawing attributes.
 	See also:
@@ -336,24 +405,69 @@ class XDotAttrParser:
 			else:
 				sys.stderr.write("unknown xdot opcode '%s'\n" % op)
 				break
-		return CompoundShape(shapes)
+		return shapes
 
 	def transform(self, x, y):
 		return self.parser.transform(x, y)
 
 
-class Hyperlink:
+class XDotParser:
+	
+	def __init__(self, xdotcode):
+		self.xdotcode = xdotcode
 
-	def __init__(self, url, x, y, w, h):
-		self.url = url
-		self.x1 = x - w/2
-		self.y1 = y - h/2
-		self.x2 = x + w/2
-		self.y2 = y + h/2
+	def parse(self):
+		graph = pydot.graph_from_dot_data(self.xdotcode)
 
-	def hit(self, x, y):
-		#print (x, y), (self.x1, self.y1), "-", (self.x2, self.y2)
-		return self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2
+		bb = graph.get_bb()
+		if bb is None:
+			return []
+
+		xmin, ymin, xmax, ymax = map(int, bb.split(","))
+
+		self.xoffset = -xmin
+		self.yoffset = -ymax
+		self.xscale = 1.0
+		self.yscale = -1.0
+		# FIXME: scale from points to pixels
+
+		width = xmax - xmin
+		height = ymax - ymin
+
+		nodes = []
+		edges = []
+		
+		for node in graph.get_node_list():
+			if node.pos is None:
+				continue
+			x, y = map(float, node.pos.split(","))
+			w = float(node.width)*72
+			h = float(node.height)*72
+			shapes = []
+			for attr in ("_draw_", "_ldraw_"):
+				if hasattr(node, attr):
+					parser = XDotAttrParser(self, getattr(node, attr))
+					shapes.extend(parser.parse())
+			url = node.URL
+			if shapes:
+				nodes.append(Node(x, y, w, h, shapes, url))
+
+		for edge in graph.get_edge_list():
+			shapes = []
+			for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
+				if hasattr(edge, attr):
+					parser = XDotAttrParser(self, getattr(edge, attr))
+					shapes.extend(parser.parse())
+			if shapes:
+				edges.append(Edge(shapes))
+
+		return Graph(width, height, nodes, edges)
+
+	def transform(self, x, y):
+		# XXX: this is not the right place for this code
+		x = (x + self.xoffset)*self.xscale
+		y = (y + self.yoffset)*self.yscale
+		return x, y
 
 
 class DotWindow(gtk.Window):
@@ -374,11 +488,7 @@ class DotWindow(gtk.Window):
 	def __init__(self):
 		gtk.Window.__init__(self)
 
-		self.graph = None
-		self.width = 1
-		self.height = 1
-		self.shapes = []
-		self.hyperlinks = []
+		self.graph = Graph()
 
 		window = self
 
@@ -416,14 +526,8 @@ class DotWindow(gtk.Window):
 		toolbar = uimanager.get_widget('/ToolBar')
 		vbox.pack_start(toolbar, False)
 
-		# TODO: Use a custom widget instead of Layout like in the scrollable.py example?
-		#scrolled_window = self.scrolled_window = gtk.ScrolledWindow()
-		#scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
-		#vbox.pack_start(scrolled_window)
-
 		self.area = gtk.DrawingArea()
 		self.area.connect("expose_event", self.on_expose)
-		#scrolled_window.add(self.area)
 		vbox.pack_start(self.area)
 
 		self.area.set_flags(gtk.CAN_FOCUS)
@@ -440,7 +544,6 @@ class DotWindow(gtk.Window):
 
 		self.x, self.y = 0.0, 0.0
 		self.zoom_ratio = 1.0
-		self.pixbuf = None
 
 		self.show_all()
 
@@ -453,50 +556,13 @@ class DotWindow(gtk.Window):
 			universal_newlines=True
 		)
 		xdotcode = p.communicate(dotcode)[0]
-		#sys.stdout.write(xdotcode)
-		self.parse(xdotcode)
+		self.set_xdotcode(xdotcode)
+
+	def set_xdotcode(self, xdotcode):
+		#print xdotcode
+		parser = XDotParser(xdotcode)
+		self.graph = parser.parse()
 		self.zoom_image(self.zoom_ratio, center=True)
-
-	def parse(self, xdotcode):
-		self.graph = pydot.graph_from_dot_data(xdotcode)
-
-		bb = self.graph.get_bb()
-		if bb is None:
-			return
-
-		xmin, ymin, xmax, ymax = map(int, bb.split(","))
-
-		self.xoffset = -xmin
-		self.yoffset = -ymax
-		self.xscale = 1.0
-		self.yscale = -1.0
-		self.width = xmax - xmin
-		self.height = ymax - ymin
-
-		self.shapes = []
-		self.hyperlinks = []
-
-		for node in self.graph.get_node_list():
-			for attr in ("_draw_", "_ldraw_"):
-				if hasattr(node, attr):
-					p = XDotAttrParser(self, getattr(node, attr))
-					self.shapes.append(p.parse())
-			if node.URL is not None:
-				x, y = map(float, node.pos.split(","))
-				w = float(node.width)*72
-				h = float(node.height)*72
-				self.hyperlinks.append(Hyperlink(node.URL, x, y, w, h))
-		for edge in self.graph.get_edge_list():
-			for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
-				if hasattr(edge, attr):
-					p = XDotAttrParser(self, getattr(edge, attr))
-					self.shapes.append(p.parse())
-
-	def transform(self, x, y):
-		# XXX: this is not the right place for this code
-		x = (x + self.xoffset)*self.xscale
-		y = (y + self.yoffset)*self.yscale
-		return x, y
 
 	def on_expose(self, area, event):
 		cr = area.window.cairo_create()
@@ -516,15 +582,7 @@ class DotWindow(gtk.Window):
 		cr.scale(self.zoom_ratio, self.zoom_ratio)
 		cr.translate(-self.x, -self.y)
 
-		# FIXME: scale from points to pixels
-
-		cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
-
-		cr.set_line_cap(cairo.LINE_CAP_BUTT)
-		cr.set_line_join(cairo.LINE_JOIN_MITER)
-		
-		for shape in self.shapes:
-			shape.draw(cr)
+		self.graph.draw(cr)
 
 		return False
 
@@ -538,8 +596,8 @@ class DotWindow(gtk.Window):
 
 	def zoom_image(self, zoom_ratio, center=False):
 		if center:
-			self.x = self.width/2
-			self.y = self.height/2
+			self.x = self.graph.width/2
+			self.y = self.graph.height/2
 		self.zoom_ratio = zoom_ratio
 		self.area.queue_draw()
 
@@ -554,8 +612,8 @@ class DotWindow(gtk.Window):
 	def on_zoom_fit(self, action):
 		rect = self.area.get_allocation()
 		zoom_ratio = min(
-			float(rect.width)/float(self.width),
-			float(rect.height)/float(self.height)
+			float(rect.width)/float(self.graph.width),
+			float(rect.height)/float(self.graph.height)
 		)
 		self.zoom_image(zoom_ratio, center=True)
 
@@ -651,12 +709,8 @@ class DotWindow(gtk.Window):
 		y /= self.zoom_ratio
 		x += self.x
 		y += self.y
-		y = self.height - y
-
-		for hyperlink in self.hyperlinks:
-			if hyperlink.hit(x, y):
-				return hyperlink.url
-		return None
+		y = self.graph.height - y
+		return self.graph.get_url(x, y)
 
 	def on_url_clicked(self, url, event):
 		return False
