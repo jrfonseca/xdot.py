@@ -722,6 +722,9 @@ class DragAction(object):
     def stop(self):
         pass
 
+    def abort(self):
+        pass
+
 
 class NullAction(DragAction):
 
@@ -745,6 +748,8 @@ class PanAction(DragAction):
 
     def stop(self):
         self.dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+
+    abort = stop
 
 
 class ZoomAction(DragAction):
@@ -783,6 +788,9 @@ class ZoomAreaAction(DragAction):
         x2, y2 = self.dot_widget.window2graph(self.stopmousex,
                                               self.stopmousey)
         self.dot_widget.zoom_to_area(x1, y1, x2, y2)
+
+    def abort(self):
+        self.dot_widget.queue_draw()
 
 
 class DotWidget(gtk.DrawingArea):
@@ -931,6 +939,10 @@ class DotWidget(gtk.DrawingArea):
             self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
             self.queue_draw()
             return True
+        if event.keyval == gtk.keysyms.Escape:
+            self.drag_action.abort()
+            self.drag_action = NullAction(self)
+            return True
         return False
 
     def get_drag_action(self, event):
@@ -946,6 +958,7 @@ class DotWidget(gtk.DrawingArea):
 
     def on_area_button_press(self, area, event):
         self.animation.stop()
+        self.drag_action.abort()
         action_type = self.get_drag_action(event)
         self.drag_action = action_type(self)
         self.drag_action.on_button_press(event)
