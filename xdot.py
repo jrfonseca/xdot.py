@@ -68,6 +68,12 @@ class Pen:
         pen.__dict__ = self.__dict__.copy()
         return pen
 
+    def highlighted(self):
+        pen = self.copy()
+        pen.color = (1, 0, 0, 1)
+        pen.fillcolor = (.7, .2, .2, 1)
+        return pen
+
 
 class Shape:
     """Abstract base class for all the drawing shapes."""
@@ -75,7 +81,7 @@ class Shape:
     def __init__(self):
         pass
 
-    def draw(self, cr):
+    def draw(self, cr, highlight=False):
         """Draw this shape with the given cairo context"""
         raise NotImplementedError
 
@@ -97,7 +103,7 @@ class TextShape(Shape):
         self.w = w
         self.t = t
 
-    def draw(self, cr):
+    def draw(self, cr, highlight=False):
 
         try:
             layout = self.layout
@@ -181,26 +187,31 @@ class EllipseShape(Shape):
     def __init__(self, pen, x0, y0, w, h, filled=False):
         Shape.__init__(self)
         self.pen = pen.copy()
+        self.highlight_pen = pen.highlighted()
         self.x0 = x0
         self.y0 = y0
         self.w = w
         self.h = h
         self.filled = filled
 
-    def draw(self, cr):
+    def draw(self, cr, highlight=False):
         cr.save()
         cr.translate(self.x0, self.y0)
         cr.scale(self.w, self.h)
         cr.move_to(1.0, 0.0)
         cr.arc(0.0, 0.0, 1.0, 0, 2.0*math.pi)
         cr.restore()
+        if highlight:
+            pen = self.highlight_pen
+        else:
+            pen = self.pen
         if self.filled:
-            cr.set_source_rgba(*self.pen.fillcolor)
+            cr.set_source_rgba(*pen.fillcolor)
             cr.fill()
         else:
-            cr.set_dash(self.pen.dash)
-            cr.set_line_width(self.pen.linewidth)
-            cr.set_source_rgba(*self.pen.color)
+            cr.set_dash(pen.dash)
+            cr.set_line_width(pen.linewidth)
+            cr.set_source_rgba(*pen.color)
             cr.stroke()
 
 
@@ -212,7 +223,7 @@ class PolygonShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr):
+    def draw(self, cr, highlight=False):
         x0, y0 = self.points[-1]
         cr.move_to(x0, y0)
         for x, y in self.points:
@@ -236,7 +247,7 @@ class BezierShape(Shape):
         self.pen = pen.copy()
         self.points = points
 
-    def draw(self, cr):
+    def draw(self, cr, highlight=False):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for i in xrange(1, len(self.points), 3):
@@ -256,9 +267,24 @@ class CompoundShape(Shape):
         Shape.__init__(self)
         self.shapes = shapes
 
-    def draw(self, cr):
+    def draw(self, cr, highlight=False):
         for shape in self.shapes:
-            shape.draw(cr)
+            shape.draw(cr, highlight=highlight)
+
+
+class Url(object):
+
+    def __init__(self, item, url):
+        self.item = item
+        self.url = url
+
+
+class Jump(object):
+
+    def __init__(self, item, x, y):
+        self.item = item
+        self.x = x
+        self.y = y
 
 
 class Element(CompoundShape):
@@ -297,12 +323,12 @@ class Node(Element):
             return None
         #print (x, y), (self.x1, self.y1), "-", (self.x2, self.y2)
         if self.is_inside(x, y):
-            return self.url
+            return Url(self, self.url)
         return None
 
     def get_jump(self, x, y):
         if self.is_inside(x, y):
-            return self.x, self.y
+            return Jump(self, self.x, self.y)
         return None
 
 
@@ -323,9 +349,9 @@ class Edge(Element):
 
     def get_jump(self, x, y):
         if square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS:
-            return self.points[-1]
+            return Jump(self, *self.points[-1])
         if square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS:
-            return self.points[0]
+            return Jump(self, *self.points[0])
         return None
 
 
@@ -342,16 +368,16 @@ class Graph(Shape):
     def get_size(self):
         return self.width, self.height
 
-    def draw(self, cr):
+    def draw(self, cr, highlight_item=None):
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
 
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
         cr.set_line_join(cairo.LINE_JOIN_MITER)
 
         for edge in self.edges:
-            edge.draw(cr)
+            edge.draw(cr, highlight=(edge is highlight_item))
         for node in self.nodes:
-            node.draw(cr)
+            node.draw(cr, highlight=(node is highlight_item))
 
     def get_url(self, x, y):
         for node in self.nodes:
@@ -730,12 +756,15 @@ class NullAction(DragAction):
 
     def on_motion_notify(self, event):
         dot_widget = self.dot_widget
-        if dot_widget.get_url(event.x, event.y) is not None:
+        item = dot_widget.get_url(event.x, event.y)
+        if item is None:
+            item = dot_widget.get_jump(event.x, event.y)
+        if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
-        elif dot_widget.get_jump(event.x, event.y) is not None:
-            dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND1))
+            dot_widget.set_highlight(item.item)
         else:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+            dot_widget.set_highlight(None)
 
 
 class PanAction(DragAction):
@@ -824,6 +853,7 @@ class DotWidget(gtk.DrawingArea):
         self.animation = NoAnimation(self)
         self.drag_action = NullAction(self)
         self.presstime = None
+        self.highlight = None
 
     def set_dotcode(self, dotcode):
         p = subprocess.Popen(
@@ -861,7 +891,7 @@ class DotWidget(gtk.DrawingArea):
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
 
-        self.graph.draw(cr)
+        self.graph.draw(cr, highlight_item=self.highlight)
         cr.restore()
 
         self.drag_action.draw(cr)
@@ -875,6 +905,11 @@ class DotWidget(gtk.DrawingArea):
         self.x = x
         self.y = y
         self.queue_draw()
+
+    def set_highlight(self, item):
+        if self.highlight != item:
+            self.highlight = item
+            self.queue_draw()
 
     def zoom_image(self, zoom_ratio, center=False):
         if center:
@@ -988,12 +1023,11 @@ class DotWidget(gtk.DrawingArea):
             x, y = int(event.x), int(event.y)
             url = self.get_url(x, y)
             if url is not None:
-                self.emit('clicked', unicode(url), event)
+                self.emit('clicked', unicode(url.url), event)
             else:
                 jump = self.get_jump(x, y)
                 if jump is not None:
-                    jumpx, jumpy = jump
-                    self.animate_to(jumpx, jumpy)
+                    self.animate_to(jump.x, jump.y)
 
             return True
         if event.button == 1 or event.button == 2:
