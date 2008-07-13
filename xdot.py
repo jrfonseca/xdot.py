@@ -125,6 +125,8 @@ class TextShape(Shape):
         else:
             cr.update_layout(layout)
 
+        descent = 2 # XXX get descender from font metrics
+
         width, height = layout.get_size()
         width = float(width)/pango.SCALE
         height = float(height)/pango.SCALE
@@ -135,10 +137,9 @@ class TextShape(Shape):
             f = self.w / width
             width = self.w # equivalent to width *= f
             height *= f
+            descent *= f
         else:
             f = 1.0
-
-        descent = 2 # XXX get descender from font metrics
 
         if self.j == self.LEFT:
             x = self.x
