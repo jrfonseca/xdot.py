@@ -128,6 +128,15 @@ class TextShape(Shape):
         width, height = layout.get_size()
         width = float(width)/pango.SCALE
         height = float(height)/pango.SCALE
+        # we know the width that dot thinks this text should have
+        # we do not necessarily have a font with the same metrics
+        # scale it so that the text fits inside its box
+        if width > self.w:
+            f = self.w / width
+            width = self.w # equivalent to width *= f
+            height *= f
+        else:
+            f = 1.0
 
         descent = 2 # XXX get descender from font metrics
 
@@ -146,8 +155,24 @@ class TextShape(Shape):
 
         cr.move_to(x, y)
 
+        cr.save()
+        cr.scale(f, f)
         cr.set_source_rgba(*self.pen.color)
         cr.show_layout(layout)
+        cr.restore()
+
+        if 0: # DEBUG
+            # show where dot thinks the text should appear
+            cr.set_source_rgba(1, 0, 0, .9)
+            if self.j == self.LEFT:
+                x = self.x
+            elif self.j == self.CENTER:
+                x = self.x - 0.5*self.w
+            elif self.j == self.RIGHT:
+                x = self.x - self.w
+            cr.move_to(x, self.y)
+            cr.line_to(x+self.w, self.y)
+            cr.stroke()
 
 
 class EllipseShape(Shape):
