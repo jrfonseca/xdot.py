@@ -480,7 +480,9 @@ class XDotAttrParser:
                 x0, y0 = s.read_point()
                 w = s.read_number()
                 h = s.read_number()
+                # xdot uses this to mean "draw a filled shape with an outline"
                 shapes.append(EllipseShape(pen, x0, y0, w, h, filled=True))
+                shapes.append(EllipseShape(pen, x0, y0, w, h))
             elif op == "e":
                 x0, y0 = s.read_point()
                 w = s.read_number()
@@ -491,7 +493,9 @@ class XDotAttrParser:
                 shapes.append(BezierShape(pen, p))
             elif op == "P":
                 p = self.read_polygon()
+                # xdot uses this to mean "draw a filled shape with an outline"
                 shapes.append(PolygonShape(pen, p, filled=True))
+                shapes.append(PolygonShape(pen, p))
             elif op == "p":
                 p = self.read_polygon()
                 shapes.append(PolygonShape(pen, p))
