@@ -411,7 +411,8 @@ class XDotAttrParser:
                 a = 1.0
             return r, g, b, a
         elif c1.isdigit():
-            h, s, v = map(float, c.split(","))
+            # "H,S,V" or "H S V" or "H, S, V" or any other variation
+            h, s, v = map(float, c.replace(",", " ").split())
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
             a = 1.0
             return r, g, b, a
