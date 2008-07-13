@@ -467,7 +467,10 @@ class XDotAttrParser:
             elif op == "C":
                 pen.fillcolor = s.read_color()
             elif op == "S":
-                s.read_text()
+                style = s.read_text()
+                if style.startswith("setlinewidth("):
+                    lw = style.split("(")[1].split(")")[0]
+                    pen.linewidth = float(lw)
             elif op == "F":
                 pen.fontsize = s.read_float()
                 pen.fontname = s.read_text()
