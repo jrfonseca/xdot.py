@@ -877,10 +877,17 @@ class DotWidget(gtk.DrawingArea):
         state = event.state
 
         if state & gtk.gdk.BUTTON2_MASK or state & gtk.gdk.BUTTON1_MASK:
-            # pan the image
-            self.x += (self.prevmousex - x)/self.zoom_ratio
-            self.y += (self.prevmousey - y)/self.zoom_ratio
-            self.queue_draw()
+            deltax = self.prevmousex - event.x
+            deltay = self.prevmousey - event.y
+            if state & gtk.gdk.CONTROL_MASK:
+                # zoom the image
+                self.zoom_ratio *= 1.005 ** (deltax + deltay)
+                self.queue_draw()
+            else:
+                # pan the image
+                self.x += deltax/self.zoom_ratio
+                self.y += deltay/self.zoom_ratio
+                self.queue_draw()
             self.prevmousex = x
             self.prevmousey = y
             self.animation.stop()
