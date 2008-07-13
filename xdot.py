@@ -280,17 +280,23 @@ class CompoundShape(Shape):
 
 class Url(object):
 
-    def __init__(self, item, url):
+    def __init__(self, item, url, highlight=None):
         self.item = item
         self.url = url
+        if highlight is None:
+            highlight = set([item])
+        self.highlight = highlight
 
 
 class Jump(object):
 
-    def __init__(self, item, x, y):
+    def __init__(self, item, x, y, highlight=None):
         self.item = item
         self.x = x
         self.y = y
+        if highlight is None:
+            highlight = set([item])
+        self.highlight = highlight
 
 
 class Element(CompoundShape):
@@ -356,9 +362,9 @@ class Edge(Element):
 
     def get_jump(self, x, y):
         if square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS:
-            return Jump(self, *self.points[-1])
+            return Jump(self, self.dst.x, self.dst.y, highlight=set([self, self.dst]))
         if square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS:
-            return Jump(self, *self.points[0])
+            return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
         return None
 
 
@@ -375,16 +381,18 @@ class Graph(Shape):
     def get_size(self):
         return self.width, self.height
 
-    def draw(self, cr, highlight_item=None):
+    def draw(self, cr, highlight_items=None):
+        if highlight_items is None:
+            highlight_items = ()
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
 
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
         cr.set_line_join(cairo.LINE_JOIN_MITER)
 
         for edge in self.edges:
-            edge.draw(cr, highlight=(edge is highlight_item))
+            edge.draw(cr, highlight=(edge in highlight_items))
         for node in self.nodes:
-            node.draw(cr, highlight=(node is highlight_item))
+            node.draw(cr, highlight=(node in highlight_items))
 
     def get_url(self, x, y):
         for node in self.nodes:
@@ -774,7 +782,7 @@ class NullAction(DragAction):
             item = dot_widget.get_jump(event.x, event.y)
         if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
-            dot_widget.set_highlight(item.item)
+            dot_widget.set_highlight(item.highlight)
         else:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
             dot_widget.set_highlight(None)
@@ -904,7 +912,7 @@ class DotWidget(gtk.DrawingArea):
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
 
-        self.graph.draw(cr, highlight_item=self.highlight)
+        self.graph.draw(cr, highlight_items=self.highlight)
         cr.restore()
 
         self.drag_action.draw(cr)
@@ -919,9 +927,9 @@ class DotWidget(gtk.DrawingArea):
         self.y = y
         self.queue_draw()
 
-    def set_highlight(self, item):
-        if self.highlight != item:
-            self.highlight = item
+    def set_highlight(self, items):
+        if self.highlight != items:
+            self.highlight = items
             self.queue_draw()
 
     def zoom_image(self, zoom_ratio, center=False):
