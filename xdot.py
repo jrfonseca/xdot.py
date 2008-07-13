@@ -27,6 +27,7 @@ import sys
 import subprocess
 import math
 import colorsys
+import time
 
 import gobject
 import gtk
@@ -598,6 +599,70 @@ class XDotParser:
         return x, y
 
 
+class Animation(object):
+
+    step = 0.03 # seconds
+
+    def __init__(self, dot_widget):
+        self.dot_widget = dot_widget
+        self.timeout_id = None
+
+    def start(self):
+        self.timeout_id = gobject.timeout_add(int(self.step * 1000), self.tick)
+
+    def stop(self):
+        self.dot_widget.animation = NoAnimation(self.dot_widget)
+        if self.timeout_id is not None:
+            gobject.source_remove(self.timeout_id)
+            self.timeout_id = None
+
+    def tick(self):
+        self.stop()
+
+
+class NoAnimation(Animation):
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+
+class LinearAnimation(Animation):
+
+    duration = 0.6
+
+    def start(self):
+        self.started = time.time()
+        Animation.start(self)
+
+    def tick(self):
+        t = (time.time() - self.started) / self.duration
+        self.animate(max(0, min(t, 1)))
+        return (t < 1)
+
+    def animate(self, t):
+        pass
+
+
+class MoveToAnimation(LinearAnimation):
+
+    def __init__(self, dot_widget, target_x, target_y):
+        Animation.__init__(self, dot_widget)
+        self.source_x = dot_widget.x
+        self.source_y = dot_widget.y
+        self.target_x = target_x
+        self.target_y = target_y
+
+    def animate(self, t):
+        sx, sy = self.source_x, self.source_y
+        tx, ty = self.target_x, self.target_y
+        self.dot_widget.x = tx * t + sx * (1-t)
+        self.dot_widget.y = ty * t + sy * (1-t)
+        self.dot_widget.queue_draw()
+
+
 class DotWidget(gtk.DrawingArea):
     """PyGTK widget that draws dot graphs."""
 
@@ -742,12 +807,9 @@ class DotWidget(gtk.DrawingArea):
             return True
 
         jump = self.get_jump(x, y)
-        x, y = self.window2graph(x, y)
         if jump is not None:
             jumpx, jumpy = jump
-            self.x += jumpx - x
-            self.y += jumpy - y
-            self.queue_draw()
+            self.animate_to(jumpx, jumpy)
         return False
 
     def on_area_button_release(self, area, event):
@@ -786,6 +848,10 @@ class DotWidget(gtk.DrawingArea):
                 area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
 
         return True
+
+    def animate_to(self, x, y):
+        self.animation = MoveToAnimation(self, x, y)
+        self.animation.start()
 
     def window2graph(self, x, y):
         rect = self.get_allocation()
