@@ -562,6 +562,10 @@ class XDotAttrParser:
         return self.parser.transform(x, y)
 
 
+class GraphParseError(Exception):
+    pass
+
+
 class XDotParser:
 
     def __init__(self, xdotcode):
@@ -571,7 +575,7 @@ class XDotParser:
         graph = pydot.graph_from_dot_data(self.xdotcode)
 
         if graph.bb is None:
-            return Graph()
+            return GraphParseError()
 
         xmin, ymin, xmax, ymax = map(int, graph.bb.split(","))
 
@@ -876,7 +880,7 @@ class DotWidget(gtk.DrawingArea):
         self.presstime = None
         self.highlight = None
 
-    def set_dotcode(self, dotcode):
+    def set_dotcode(self, dotcode, filename='<stdin>'):
         p = subprocess.Popen(
             ['dot', '-Txdot'],
             stdin=subprocess.PIPE,
@@ -885,7 +889,15 @@ class DotWidget(gtk.DrawingArea):
             universal_newlines=True
         )
         xdotcode = p.communicate(dotcode)[0]
-        self.set_xdotcode(xdotcode)
+        try:
+            self.set_xdotcode(xdotcode)
+        except GraphParseError, e:
+            msg = "Could not parse %s, is it a valid dot file?" % filename
+            error_dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                          message_format=msg,
+                                          buttons=gtk.BUTTONS_OK)
+            error_dlg.run()
+            error_dlg.destroy()
 
     def set_xdotcode(self, xdotcode):
         #print xdotcode
@@ -1143,7 +1155,7 @@ class DotWindow(gtk.Window):
         # Add the actiongroup to the uimanager
         uimanager.insert_action_group(actiongroup, 0)
 
-        # Add a UI description
+        # Add a UI descrption
         uimanager.add_ui_from_string(self.ui)
 
         # Create a Toolbar
@@ -1156,13 +1168,13 @@ class DotWindow(gtk.Window):
 
         self.show_all()
 
-    def set_dotcode(self, dotcode):
-        self.widget.set_dotcode(dotcode)
+    def set_dotcode(self, dotcode, filename='<stdin>'):
+        self.widget.set_dotcode(dotcode, filename)
 
     def open_file(self, filename):
         try:
             fp = file(filename, 'rt')
-            self.set_dotcode(fp.read())
+            self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError:
             # TODO: show an error message
