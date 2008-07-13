@@ -78,7 +78,7 @@ class Shape:
 
 
 class TextShape(Shape):
-    
+
     #fontmap = pangocairo.CairoFontMap()
     #fontmap.set_resolution(72)
     #context = fontmap.create_context()
@@ -100,7 +100,7 @@ class TextShape(Shape):
             layout = self.layout
         except AttributeError:
             layout = cr.create_layout()
-            
+
             # set font options
             # see http://lists.freedesktop.org/archives/cairo/2007-February/009688.html
             context = layout.get_context()
@@ -109,16 +109,16 @@ class TextShape(Shape):
             fo.set_hint_style(cairo.HINT_STYLE_NONE)
             fo.set_hint_metrics(cairo.HINT_METRICS_OFF)
             pangocairo.context_set_font_options(context, fo)
-            
+
             # set font
             font = pango.FontDescription()
             font.set_family(self.pen.fontname)
             font.set_absolute_size(self.pen.fontsize*pango.SCALE)
             layout.set_font_description(font)
-            
+
             # set text
             layout.set_text(self.t)
-            
+
             # cache it
             self.layout = layout
         else:
@@ -138,9 +138,9 @@ class TextShape(Shape):
             x = self.x - width
         else:
             assert 0
-        
+
         y = self.y - height
-        
+
         cr.move_to(x, y)
 
         cr.set_source_rgba(*self.pen.color)
@@ -234,7 +234,7 @@ class Element(CompoundShape):
 
     def __init__(self, shapes):
         CompoundShape.__init__(self, shapes)
-    
+
     def get_url(self, x, y):
         return None
 
@@ -246,7 +246,7 @@ class Node(Element):
 
     def __init__(self, x, y, w, h, shapes, url):
         Element.__init__(self, shapes)
-        
+
         self.x = x
         self.y = y
 
@@ -254,7 +254,7 @@ class Node(Element):
         self.y1 = y - 0.5*h
         self.x2 = x + 0.5*w
         self.y2 = y + 0.5*h
-        
+
         self.url = url
 
     def is_inside(self, x, y):
@@ -301,7 +301,7 @@ class Graph(Shape):
 
     def __init__(self, width=1, height=1, nodes=(), edges=()):
         Shape.__init__(self)
-        
+
         self.width = width
         self.height = height
         self.nodes = nodes
@@ -315,12 +315,12 @@ class Graph(Shape):
 
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
         cr.set_line_join(cairo.LINE_JOIN_MITER)
-        
+
         for edge in self.edges:
             edge.draw(cr)
         for node in self.nodes:
             node.draw(cr)
-    
+
     def get_url(self, x, y):
         for node in self.nodes:
             url = node.get_url(x, y)
@@ -472,7 +472,7 @@ class XDotAttrParser:
 
 
 class XDotParser:
-    
+
     def __init__(self, xdotcode):
         self.xdotcode = xdotcode
 
@@ -495,7 +495,7 @@ class XDotParser:
 
         nodes = []
         edges = []
-        
+
         for node in graph.get_node_list():
             if node.pos is None:
                 continue
@@ -514,7 +514,7 @@ class XDotParser:
         for edge in graph.get_edge_list():
             if edge.pos is None:
                 continue
-            points = self.parse_edge_pos(edge.pos)    
+            points = self.parse_edge_pos(edge.pos)
             shapes = []
             for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
                 if hasattr(edge, attr):
@@ -825,20 +825,20 @@ class DotWindow(gtk.Window):
 
 def main():
     import optparse
-    
+
     parser = optparse.OptionParser(
         usage="\n\t%prog [file]",
         version="%%prog %s" % __version__)
-    
+
     (options, args) = parser.parse_args(sys.argv[1:])
-    
+
     if len(args) == 0:
         fp = sys.stdin
     elif len(args) == 1:
         fp = file(args[0], 'rt')
     else:
         parser.error('incorrect number of arguments')
-    
+
     win = DotWindow()
     win.set_dotcode(fp.read())
     win.connect('destroy', gtk.main_quit)
