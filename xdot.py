@@ -713,6 +713,7 @@ class DotWidget(gtk.DrawingArea):
 
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
+        self.animation = NoAnimation(self)
 
     def set_dotcode(self, dotcode):
         p = subprocess.Popen(
@@ -821,6 +822,7 @@ class DotWidget(gtk.DrawingArea):
             area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.FLEUR))
             self.prevmousex = event.x
             self.prevmousey = event.y
+            self.animation.stop()
 
         if event.type not in (gtk.gdk.BUTTON_PRESS, gtk.gdk.BUTTON_RELEASE):
             return False
@@ -864,6 +866,7 @@ class DotWidget(gtk.DrawingArea):
             self.queue_draw()
             self.prevmousex = x
             self.prevmousey = y
+            self.animation.stop()
         else:
             # set cursor
             if self.get_url(x, y) is not None:
