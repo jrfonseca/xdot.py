@@ -894,10 +894,10 @@ class DotWidget(gtk.DrawingArea):
             self.set_xdotcode(xdotcode)
         except GraphParseError, e:
             msg = "Could not parse %s, is it a valid dot file?" % filename
-            error_dlg = gtk.MessageDialog(title="Dot Viewer",
-                                          type=gtk.MESSAGE_ERROR,
+            error_dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                           message_format=msg,
                                           buttons=gtk.BUTTONS_OK)
+            error_dlg.set_title('Dot Viewer')
             error_dlg.run()
             error_dlg.destroy()
             return False
