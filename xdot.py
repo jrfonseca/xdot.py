@@ -676,10 +676,10 @@ class ZoomToAnimation(MoveToAnimation):
         distance = math.hypot(self.source_x - self.target_x,
                               self.source_y - self.target_y)
         rect = self.dot_widget.get_allocation()
-        visible = min(rect.width, rect.height) * .9
-        if distance > visible:
-            desired_middle_zoom = visible / distance
-            self.extra_zoom = min(0, 4 * (desired_middle_zoom - middle_zoom))
+        visible = min(rect.width, rect.height) * self.dot_widget.zoom_ratio
+        visible *= 0.9
+        desired_middle_zoom = visible / distance
+        self.extra_zoom = min(0, 4 * (desired_middle_zoom - middle_zoom))
 
     def animate(self, t):
         a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
