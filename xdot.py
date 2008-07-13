@@ -37,6 +37,9 @@ import pangocairo
 
 import pydot
 
+if pydot.__version__ != '0.9.10':
+    sys.stderr('pydot version 0.9.10 required, but version %s found\n' % pydot.__version__)
+
 
 # See http://www.graphviz.org/pub/scm/graphviz-cairo/plugin/cairo/gvrender_cairo.c
 
