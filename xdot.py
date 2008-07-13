@@ -346,9 +346,10 @@ def square_distance(x1, y1, x2, y2):
 
 class Edge(Element):
 
-    def __init__(self, points, shapes):
+    def __init__(self, src, dst, points, shapes):
         Element.__init__(self, shapes)
-
+        self.src = src
+        self.dst = dst
         self.points = points
 
     RADIUS = 10
@@ -577,6 +578,7 @@ class XDotParser:
 
         nodes = []
         edges = []
+        node_by_name = {}
 
         for node in graph.get_node_list():
             if node.pos is None:
@@ -590,8 +592,11 @@ class XDotParser:
                     parser = XDotAttrParser(self, getattr(node, attr))
                     shapes.extend(parser.parse())
             url = node.URL
+            my_node = Node(x, y, w, h, shapes, url)
+            node_name = node.get_name().strip('"') # XXX
+            node_by_name[node_name] = my_node
             if shapes:
-                nodes.append(Node(x, y, w, h, shapes, url))
+                nodes.append(my_node)
 
         for edge in graph.get_edge_list():
             if edge.pos is None:
@@ -603,7 +608,9 @@ class XDotParser:
                     parser = XDotAttrParser(self, getattr(edge, attr))
                     shapes.extend(parser.parse())
             if shapes:
-                edges.append(Edge(points, shapes))
+                src = node_by_name[edge.get_source()]
+                dst = node_by_name[edge.get_destination()]
+                edges.append(Edge(src, dst, points, shapes))
 
         return Graph(width, height, nodes, edges)
 
