@@ -417,7 +417,11 @@ class XDotAttrParser:
             a = 1.0
             return r, g, b, a
         else:
-            color = gtk.gdk.color_parse(c)
+            try:
+                color = gtk.gdk.color_parse(c)
+            except ValueError:
+                sys.stderr.write("unknown color '%s'\n" % c)
+                return 1, 1, 1, 1
             s = 1.0/65535.0
             r = color.red*s
             g = color.green*s
