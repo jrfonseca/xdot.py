@@ -1096,6 +1096,8 @@ class DotWindow(gtk.Window):
     ui = '''
     <ui>
         <toolbar name="ToolBar">
+            <toolitem action="Open"/>
+            <separator/>
             <toolitem action="ZoomIn"/>
             <toolitem action="ZoomOut"/>
             <toolitem action="ZoomFit"/>
@@ -1131,6 +1133,7 @@ class DotWindow(gtk.Window):
 
         # Create actions
         actiongroup.add_actions((
+            ('Open', gtk.STOCK_OPEN, None, None, None, self.on_open),
             ('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, None, self.widget.on_zoom_in),
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
@@ -1156,6 +1159,38 @@ class DotWindow(gtk.Window):
     def set_dotcode(self, dotcode):
         self.widget.set_dotcode(dotcode)
 
+    def open_file(self, filename):
+        try:
+            fp = file(filename, 'rt')
+            self.set_dotcode(fp.read())
+            fp.close()
+        except IOError:
+            # TODO: show an error message
+            pass
+
+    def on_open(self, action):
+        chooser = gtk.FileChooserDialog(title="Open dot File",
+                                        action=gtk.FILE_CHOOSER_ACTION_OPEN,
+                                        buttons=(gtk.STOCK_CANCEL,
+                                                 gtk.RESPONSE_CANCEL,
+                                                 gtk.STOCK_OPEN,
+                                                 gtk.RESPONSE_OK))
+        chooser.set_default_response(gtk.RESPONSE_OK)
+        filter = gtk.FileFilter()
+        filter.set_name("Graphviz dot files")
+        filter.add_pattern("*.dot")
+        chooser.add_filter(filter)
+        filter = gtk.FileFilter()
+        filter.set_name("All files")
+        filter.add_pattern("*")
+        chooser.add_filter(filter)
+        if chooser.run() == gtk.RESPONSE_OK:
+            filename = chooser.get_filename()
+            chooser.destroy()
+            self.open_file(filename)
+        else:
+            chooser.destroy()
+
 
 def main():
     import optparse
@@ -1165,17 +1200,16 @@ def main():
         version="%%prog %s" % __version__)
 
     (options, args) = parser.parse_args(sys.argv[1:])
-
-    if len(args) == 0:
-        fp = sys.stdin
-    elif len(args) == 1:
-        fp = file(args[0], 'rt')
-    else:
+    if len(args) > 1:
         parser.error('incorrect number of arguments')
 
     win = DotWindow()
-    win.set_dotcode(fp.read())
     win.connect('destroy', gtk.main_quit)
+    if len(args) >= 1:
+        if args[0] == '-':
+            win.set_dotcode(sys.stdin.read())
+        else:
+            win.open_file(args[0])
     gtk.main()
 
 
