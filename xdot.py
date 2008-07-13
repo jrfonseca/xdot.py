@@ -426,7 +426,7 @@ class XDotAttrParser:
             p.append((x, y))
         return p
 
-    def read_color(self):
+    def read_color(self, fallback=(0,0,0,1)):
         # See http://www.graphviz.org/doc/info/attrs.html#k:color
         c = self.read_text()
         c1 = c[:1]
@@ -451,7 +451,7 @@ class XDotAttrParser:
                 color = gtk.gdk.color_parse(c)
             except ValueError:
                 sys.stderr.write("unknown color '%s'\n" % c)
-                return 1, 1, 1, 1
+                return fallback
             s = 1.0/65535.0
             r = color.red*s
             g = color.green*s
@@ -467,9 +467,9 @@ class XDotAttrParser:
         while s:
             op = s.read_code()
             if op == "c":
-                pen.color = s.read_color()
+                pen.color = s.read_color(fallback=pen.color)
             elif op == "C":
-                pen.fillcolor = s.read_color()
+                pen.fillcolor = s.read_color(fallback=pen.fillcolor)
             elif op == "S":
                 style = s.read_text()
                 if style.startswith("setlinewidth("):
