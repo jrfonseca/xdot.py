@@ -59,6 +59,7 @@ class Pen:
         self.linewidth = 1.0
         self.fontsize = 14.0
         self.fontname = "Times-Roman"
+        self.dash = ()
 
     def copy(self):
         """Create a copy of this pen."""
@@ -196,6 +197,7 @@ class EllipseShape(Shape):
             cr.set_source_rgba(*self.pen.fillcolor)
             cr.fill()
         else:
+            cr.set_dash(self.pen.dash)
             cr.set_line_width(self.pen.linewidth)
             cr.set_source_rgba(*self.pen.color)
             cr.stroke()
@@ -220,6 +222,7 @@ class PolygonShape(Shape):
             cr.fill_preserve()
             cr.fill()
         else:
+            cr.set_dash(self.pen.dash)
             cr.set_line_width(self.pen.linewidth)
             cr.set_source_rgba(*self.pen.color)
             cr.stroke()
@@ -240,6 +243,7 @@ class BezierShape(Shape):
             x2, y2 = self.points[i + 1]
             x3, y3 = self.points[i + 2]
             cr.curve_to(x1, y1, x2, y2, x3, y3)
+        cr.set_dash(self.pen.dash)
         cr.set_line_width(self.pen.linewidth)
         cr.set_source_rgba(*self.pen.color)
         cr.stroke()
@@ -471,6 +475,8 @@ class XDotAttrParser:
                 if style.startswith("setlinewidth("):
                     lw = style.split("(")[1].split(")")[0]
                     pen.linewidth = float(lw)
+                elif style == "dashed":
+                    pen.dash = [6]       # 6pt on, 6pt off
             elif op == "F":
                 pen.fontsize = s.read_float()
                 pen.fontname = s.read_text()
