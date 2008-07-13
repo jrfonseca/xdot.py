@@ -836,6 +836,8 @@ class DotWidget(gtk.DrawingArea):
         if self.presstime is None:
             # got a button release without seeing the press?
             return False
+        # XXX instead of doing this complicated logic, shouldn't we listen
+        # for gtk's clicked event instead?
         deltax = self.startmousex - event.x
         deltay = self.startmousey - event.y
         return (time.time() < self.presstime + click_timeout
