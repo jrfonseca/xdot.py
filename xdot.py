@@ -476,11 +476,10 @@ class XDotParser:
     def parse(self):
         graph = pydot.graph_from_dot_data(self.xdotcode)
 
-        bb = graph.get_bb()
-        if bb is None:
+        if graph.bb is None:
             return Graph()
 
-        xmin, ymin, xmax, ymax = map(int, bb.split(","))
+        xmin, ymin, xmax, ymax = map(int, graph.bb.split(","))
 
         self.xoffset = -xmin
         self.yoffset = -ymax
