@@ -688,6 +688,103 @@ class ZoomToAnimation(MoveToAnimation):
         MoveToAnimation.animate(self, t)
 
 
+class DragAction(object):
+
+    def __init__(self, dot_widget):
+        self.dot_widget = dot_widget
+
+    def on_button_press(self, event):
+        self.startmousex = self.prevmousex = event.x
+        self.startmousey = self.prevmousey = event.y
+        self.start()
+
+    def on_motion_notify(self, event):
+        deltax = self.prevmousex - event.x
+        deltay = self.prevmousey - event.y
+        self.drag(deltax, deltay)
+        self.prevmousex = event.x
+        self.prevmousey = event.y
+
+    def on_button_release(self, event):
+        self.stopmousex = event.x
+        self.stopmousey = event.y
+        self.stop()
+
+    def draw(self, cr):
+        pass
+
+    def start(self):
+        pass
+
+    def drag(self, deltax, deltay):
+        pass
+
+    def stop(self):
+        pass
+
+
+class NullAction(DragAction):
+
+    def on_motion_notify(self, event):
+        dot_widget = self.dot_widget
+        if dot_widget.get_url(event.x, event.y) is not None:
+            dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
+        else:
+            dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+
+
+class PanAction(DragAction):
+
+    def start(self):
+        self.dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.FLEUR))
+
+    def drag(self, deltax, deltay):
+        self.dot_widget.x += deltax / self.dot_widget.zoom_ratio
+        self.dot_widget.y += deltay / self.dot_widget.zoom_ratio
+        self.dot_widget.queue_draw()
+
+    def stop(self):
+        self.dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
+
+
+class ZoomAction(DragAction):
+
+    def drag(self, deltax, deltay):
+        self.dot_widget.zoom_ratio *= 1.005 ** (deltax + deltay)
+        self.dot_widget.queue_draw()
+
+    def stop(self):
+        self.dot_widget.queue_draw()
+
+
+class ZoomAreaAction(DragAction):
+
+    def drag(self, deltax, deltay):
+        self.dot_widget.queue_draw()
+
+    def draw(self, cr):
+        cr.save()
+        cr.set_source_rgba(.5, .5, 1.0, 0.25)
+        cr.rectangle(self.startmousex, self.startmousey,
+                     self.prevmousex - self.startmousex,
+                     self.prevmousey - self.startmousey)
+        cr.fill()
+        cr.set_source_rgba(.5, .5, 1.0, 1.0)
+        cr.set_line_width(1)
+        cr.rectangle(self.startmousex - .5, self.startmousey - .5,
+                     self.prevmousex - self.startmousex + 1,
+                     self.prevmousey - self.startmousey + 1)
+        cr.stroke()
+        cr.restore()
+
+    def stop(self):
+        x1, y1 = self.dot_widget.window2graph(self.startmousex,
+                                              self.startmousey)
+        x2, y2 = self.dot_widget.window2graph(self.stopmousex,
+                                              self.stopmousey)
+        self.dot_widget.zoom_to_area(x1, y1, x2, y2)
+
+
 class DotWidget(gtk.DrawingArea):
     """PyGTK widget that draws dot graphs."""
 
@@ -715,6 +812,7 @@ class DotWidget(gtk.DrawingArea):
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
         self.animation = NoAnimation(self)
+        self.drag_action = NullAction(self)
         self.presstime = None
 
     def set_dotcode(self, dotcode):
@@ -747,12 +845,16 @@ class DotWidget(gtk.DrawingArea):
         cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
         cr.paint()
 
+        cr.save()
         rect = self.get_allocation()
         cr.translate(0.5*rect.width, 0.5*rect.height)
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
 
         self.graph.draw(cr)
+        cr.restore()
+
+        self.drag_action.draw(cr)
 
         return False
 
@@ -769,6 +871,18 @@ class DotWidget(gtk.DrawingArea):
             self.x = self.graph.width/2
             self.y = self.graph.height/2
         self.zoom_ratio = zoom_ratio
+        self.queue_draw()
+
+    def zoom_to_area(self, x1, y1, x2, y2):
+        rect = self.get_allocation()
+        width = abs(x1 - x2)
+        height = abs(y1 - y2)
+        self.zoom_ratio = min(
+            float(rect.width)/float(width),
+            float(rect.height)/float(height)
+        )
+        self.x = (x1 + x2) / 2
+        self.y = (y1 + y2) / 2
         self.queue_draw()
 
     ZOOM_INCREMENT = 1.25
@@ -819,17 +933,25 @@ class DotWidget(gtk.DrawingArea):
             return True
         return False
 
-    def on_area_button_press(self, area, event):
-        if event.button == 2 or event.button == 1:
-            area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.FLEUR))
-            self.prevmousex = self.startmousex = event.x
-            self.prevmousey = self.startmousey = event.y
-            self.presstime = time.time()
-            self.animation.stop()
+    def get_drag_action(self, event):
+        state = event.state
+        if event.button in (1, 2): # left or middle button
+            if state & gtk.gdk.CONTROL_MASK:
+                return ZoomAction
+            elif state & gtk.gdk.SHIFT_MASK:
+                return ZoomAreaAction
+            else:
+                return PanAction
+        return NullAction
 
-        if event.type not in (gtk.gdk.BUTTON_PRESS, gtk.gdk.BUTTON_RELEASE):
-            return False
-        x, y = int(event.x), int(event.y)
+    def on_area_button_press(self, area, event):
+        self.animation.stop()
+        action_type = self.get_drag_action(event)
+        self.drag_action = action_type(self)
+        self.drag_action.on_button_press(event)
+        self.presstime = time.time()
+        self.pressx = event.x
+        self.pressy = event.y
         return False
 
     def is_click(self, event, click_fuzz=4, click_timeout=1.0):
@@ -839,28 +961,27 @@ class DotWidget(gtk.DrawingArea):
             return False
         # XXX instead of doing this complicated logic, shouldn't we listen
         # for gtk's clicked event instead?
-        deltax = self.startmousex - event.x
-        deltay = self.startmousey - event.y
+        deltax = self.pressx - event.x
+        deltay = self.pressy - event.y
         return (time.time() < self.presstime + click_timeout
                 and math.hypot(deltax, deltay) < click_fuzz)
 
     def on_area_button_release(self, area, event):
-        if event.button == 2 or event.button == 1:
-            area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-            self.prevmousex = None
-            self.prevmousey = None
+        self.drag_action.on_button_release(event)
+        self.drag_action = NullAction(self)
+        if event.button == 1 and self.is_click(event):
+            x, y = int(event.x), int(event.y)
+            url = self.get_url(x, y)
+            if url is not None:
+                self.emit('clicked', unicode(url), event)
+            else:
+                jump = self.get_jump(x, y)
+                if jump is not None:
+                    jumpx, jumpy = jump
+                    self.animate_to(jumpx, jumpy)
 
-            if event.button == 1 and self.is_click(event):
-                x, y = int(event.x), int(event.y)
-                url = self.get_url(x, y)
-                if url is not None:
-                    self.emit('clicked', unicode(url), event)
-                else:
-                    jump = self.get_jump(x, y)
-                    if jump is not None:
-                        jumpx, jumpy = jump
-                        self.animate_to(jumpx, jumpy)
-
+            return True
+        if event.button == 1 or event.button == 2:
             return True
         return False
 
@@ -874,31 +995,7 @@ class DotWidget(gtk.DrawingArea):
         return False
 
     def on_area_motion_notify(self, area, event):
-        x, y = int(event.x), int(event.y)
-        state = event.state
-
-        if state & gtk.gdk.BUTTON2_MASK or state & gtk.gdk.BUTTON1_MASK:
-            deltax = self.prevmousex - event.x
-            deltay = self.prevmousey - event.y
-            if state & gtk.gdk.CONTROL_MASK:
-                # zoom the image
-                self.zoom_ratio *= 1.005 ** (deltax + deltay)
-                self.queue_draw()
-            else:
-                # pan the image
-                self.x += deltax/self.zoom_ratio
-                self.y += deltay/self.zoom_ratio
-                self.queue_draw()
-            self.prevmousex = x
-            self.prevmousey = y
-            self.animation.stop()
-        else:
-            # set cursor
-            if self.get_url(x, y) is not None:
-                area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
-            else:
-                area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-
+        self.drag_action.on_motion_notify(event)
         return True
 
     def animate_to(self, x, y):
