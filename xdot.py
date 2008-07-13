@@ -969,6 +969,7 @@ class DotWidget(gtk.DrawingArea):
         self.queue_draw()
 
     ZOOM_INCREMENT = 1.25
+    ZOOM_TO_FIT_MARGIN = 12
 
     def on_zoom_in(self, action):
         self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
@@ -978,6 +979,10 @@ class DotWidget(gtk.DrawingArea):
 
     def on_zoom_fit(self, action):
         rect = self.get_allocation()
+        rect.x += self.ZOOM_TO_FIT_MARGIN
+        rect.y += self.ZOOM_TO_FIT_MARGIN
+        rect.width -= 2 * self.ZOOM_TO_FIT_MARGIN
+        rect.height -= 2 * self.ZOOM_TO_FIT_MARGIN
         zoom_ratio = min(
             float(rect.width)/float(self.graph.width),
             float(rect.height)/float(self.graph.height)
