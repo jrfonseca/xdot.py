@@ -968,16 +968,7 @@ class DotWidget(gtk.DrawingArea):
         self.y = (y1 + y2) / 2
         self.queue_draw()
 
-    ZOOM_INCREMENT = 1.25
-    ZOOM_TO_FIT_MARGIN = 12
-
-    def on_zoom_in(self, action):
-        self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
-
-    def on_zoom_out(self, action):
-        self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
-
-    def on_zoom_fit(self, action):
+    def zoom_to_fit(self):
         rect = self.get_allocation()
         rect.x += self.ZOOM_TO_FIT_MARGIN
         rect.y += self.ZOOM_TO_FIT_MARGIN
@@ -988,6 +979,18 @@ class DotWidget(gtk.DrawingArea):
             float(rect.height)/float(self.graph.height)
         )
         self.zoom_image(zoom_ratio, center=True)
+
+    ZOOM_INCREMENT = 1.25
+    ZOOM_TO_FIT_MARGIN = 12
+
+    def on_zoom_in(self, action):
+        self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
+
+    def on_zoom_out(self, action):
+        self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
+
+    def on_zoom_fit(self, action):
+        self.zoom_to_fit()
 
     def on_zoom_100(self, action):
         self.zoom_image(1.0)
@@ -1181,6 +1184,7 @@ class DotWindow(gtk.Window):
     def set_dotcode(self, dotcode, filename='<stdin>'):
         if self.widget.set_dotcode(dotcode, filename):
             self.set_title(os.path.basename(filename) + ' - Dot Viewer')
+            self.widget.zoom_to_fit()
 
     def open_file(self, filename):
         try:
