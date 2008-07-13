@@ -714,6 +714,7 @@ class DotWidget(gtk.DrawingArea):
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
         self.animation = NoAnimation(self)
+        self.presstime = None
 
     def set_dotcode(self, dotcode):
         p = subprocess.Popen(
@@ -820,29 +821,43 @@ class DotWidget(gtk.DrawingArea):
     def on_area_button_press(self, area, event):
         if event.button == 2 or event.button == 1:
             area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.FLEUR))
-            self.prevmousex = event.x
-            self.prevmousey = event.y
+            self.prevmousex = self.startmousex = event.x
+            self.prevmousey = self.startmousey = event.y
+            self.presstime = time.time()
             self.animation.stop()
 
         if event.type not in (gtk.gdk.BUTTON_PRESS, gtk.gdk.BUTTON_RELEASE):
             return False
         x, y = int(event.x), int(event.y)
-        url = self.get_url(x, y)
-        if url is not None:
-            self.emit('clicked', unicode(url), event)
-            return True
-
-        jump = self.get_jump(x, y)
-        if jump is not None:
-            jumpx, jumpy = jump
-            self.animate_to(jumpx, jumpy)
         return False
+
+    def is_click(self, event, click_fuzz=4, click_timeout=1.0):
+        assert event.type == gtk.gdk.BUTTON_RELEASE
+        if self.presstime is None:
+            # got a button release without seeing the press?
+            return False
+        deltax = self.startmousex - event.x
+        deltay = self.startmousey - event.y
+        return (time.time() < self.presstime + click_timeout
+                and math.hypot(deltax, deltay) < click_fuzz)
 
     def on_area_button_release(self, area, event):
         if event.button == 2 or event.button == 1:
             area.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
             self.prevmousex = None
             self.prevmousey = None
+
+            if event.button == 1 and self.is_click(event):
+                x, y = int(event.x), int(event.y)
+                url = self.get_url(x, y)
+                if url is not None:
+                    self.emit('clicked', unicode(url), event)
+                else:
+                    jump = self.get_jump(x, y)
+                    if jump is not None:
+                        jumpx, jumpy = jump
+                        self.animate_to(jumpx, jumpy)
+
             return True
         return False
 
