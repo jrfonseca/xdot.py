@@ -129,6 +129,8 @@ class TextShape(Shape):
         width = float(width)/pango.SCALE
         height = float(height)/pango.SCALE
 
+        descent = 2 # XXX get descender from font metrics
+
         cr.move_to(self.x - self.w/2, self.y)
 
         if self.j == self.LEFT:
@@ -140,7 +142,7 @@ class TextShape(Shape):
         else:
             assert 0
 
-        y = self.y - height
+        y = self.y - height + descent
 
         cr.move_to(x, y)
 
