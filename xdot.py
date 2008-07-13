@@ -663,6 +663,30 @@ class MoveToAnimation(LinearAnimation):
         self.dot_widget.queue_draw()
 
 
+class ZoomToAnimation(MoveToAnimation):
+
+    def __init__(self, dot_widget, target_x, target_y):
+        MoveToAnimation.__init__(self, dot_widget, target_x, target_y)
+        self.source_zoom = dot_widget.zoom_ratio
+        self.target_zoom = self.source_zoom
+        self.extra_zoom = 0
+
+        middle_zoom = 0.5 * (self.source_zoom + self.target_zoom)
+
+        distance = math.hypot(self.source_x - self.target_x,
+                              self.source_y - self.target_y)
+        rect = self.dot_widget.get_allocation()
+        visible = min(rect.width, rect.height) * .9
+        if distance > visible:
+            desired_middle_zoom = visible / distance
+            self.extra_zoom = 4 * (desired_middle_zoom - middle_zoom)
+
+    def animate(self, t):
+        a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
+        self.dot_widget.zoom_ratio = c*t + b*t*(1-t) + a*(1-t)
+        MoveToAnimation.animate(self, t)
+
+
 class DotWidget(gtk.DrawingArea):
     """PyGTK widget that draws dot graphs."""
 
@@ -850,7 +874,7 @@ class DotWidget(gtk.DrawingArea):
         return True
 
     def animate_to(self, x, y):
-        self.animation = MoveToAnimation(self, x, y)
+        self.animation = ZoomToAnimation(self, x, y)
         self.animation.start()
 
     def window2graph(self, x, y):
