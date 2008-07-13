@@ -732,6 +732,8 @@ class NullAction(DragAction):
         dot_widget = self.dot_widget
         if dot_widget.get_url(event.x, event.y) is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
+        elif dot_widget.get_jump(event.x, event.y) is not None:
+            dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND1))
         else:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
 
