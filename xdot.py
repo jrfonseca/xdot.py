@@ -679,7 +679,7 @@ class ZoomToAnimation(MoveToAnimation):
         visible = min(rect.width, rect.height) * .9
         if distance > visible:
             desired_middle_zoom = visible / distance
-            self.extra_zoom = 4 * (desired_middle_zoom - middle_zoom)
+            self.extra_zoom = min(0, 4 * (desired_middle_zoom - middle_zoom))
 
     def animate(self, t):
         a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
