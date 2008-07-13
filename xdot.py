@@ -475,8 +475,10 @@ class XDotAttrParser:
                 if style.startswith("setlinewidth("):
                     lw = style.split("(")[1].split(")")[0]
                     pen.linewidth = float(lw)
+                elif style == "solid":
+                    pen.dash = ()
                 elif style == "dashed":
-                    pen.dash = [6]       # 6pt on, 6pt off
+                    pen.dash = (6, )       # 6pt on, 6pt off
             elif op == "F":
                 pen.fontsize = s.read_float()
                 pen.fontname = s.read_text()
