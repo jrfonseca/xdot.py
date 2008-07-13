@@ -23,6 +23,7 @@ __author__ = "Jose Fonseca"
 __version__ = "0.3"
 
 
+import os
 import sys
 import subprocess
 import math
@@ -893,11 +894,15 @@ class DotWidget(gtk.DrawingArea):
             self.set_xdotcode(xdotcode)
         except GraphParseError, e:
             msg = "Could not parse %s, is it a valid dot file?" % filename
-            error_dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+            error_dlg = gtk.MessageDialog(title="Dot Viewer",
+                                          type=gtk.MESSAGE_ERROR,
                                           message_format=msg,
                                           buttons=gtk.BUTTONS_OK)
             error_dlg.run()
             error_dlg.destroy()
+            return False
+        else:
+            return True
 
     def set_xdotcode(self, xdotcode):
         #print xdotcode
@@ -1125,7 +1130,7 @@ class DotWindow(gtk.Window):
 
         window = self
 
-        window.set_title('Dot')
+        window.set_title('Dot Viewer')
         window.set_default_size(512, 512)
         vbox = gtk.VBox()
         window.add(vbox)
@@ -1169,7 +1174,8 @@ class DotWindow(gtk.Window):
         self.show_all()
 
     def set_dotcode(self, dotcode, filename='<stdin>'):
-        self.widget.set_dotcode(dotcode, filename)
+        if self.widget.set_dotcode(dotcode, filename):
+            self.set_title(os.path.basename(filename) + ' - Dot Viewer')
 
     def open_file(self, filename):
         try:
