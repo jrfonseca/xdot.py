@@ -26,6 +26,7 @@ __version__ = "0.3"
 import sys
 import subprocess
 import math
+import colorsys
 
 import gobject
 import gtk
@@ -410,8 +411,10 @@ class XDotAttrParser:
                 a = 1.0
             return r, g, b, a
         elif c1.isdigit():
-            h, s, v = map(float, c[1:].split(","))
-            raise NotImplementedError
+            h, s, v = map(float, c.split(","))
+            r, g, b = colorsys.hsv_to_rgb(h, s, v)
+            a = 1.0
+            return r, g, b, a
         else:
             color = gtk.gdk.color_parse(c)
             s = 1.0/65535.0
