@@ -737,6 +737,7 @@ class ZoomToAnimation(MoveToAnimation):
     def animate(self, t):
         a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
         self.dot_widget.zoom_ratio = c*t + b*t*(1-t) + a*(1-t)
+        self.dot_widget.zoom_to_fit_on_resize = False
         MoveToAnimation.animate(self, t)
 
 
@@ -813,6 +814,7 @@ class ZoomAction(DragAction):
 
     def drag(self, deltax, deltay):
         self.dot_widget.zoom_ratio *= 1.005 ** (deltax + deltay)
+        self.dot_widget.zoom_to_fit_on_resize = False
         self.dot_widget.queue_draw()
 
     def stop(self):
@@ -871,11 +873,13 @@ class DotWidget(gtk.DrawingArea):
         self.add_events(gtk.gdk.POINTER_MOTION_MASK | gtk.gdk.POINTER_MOTION_HINT_MASK | gtk.gdk.BUTTON_RELEASE_MASK)
         self.connect("motion-notify-event", self.on_area_motion_notify)
         self.connect("scroll-event", self.on_area_scroll_event)
+        self.connect("size-allocate", self.on_area_size_allocate)
 
         self.connect('key-press-event', self.on_key_press_event)
 
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
+        self.zoom_to_fit_on_resize = False
         self.animation = NoAnimation(self)
         self.drag_action = NullAction(self)
         self.presstime = None
@@ -954,6 +958,7 @@ class DotWidget(gtk.DrawingArea):
             self.x = self.graph.width/2
             self.y = self.graph.height/2
         self.zoom_ratio = zoom_ratio
+        self.zoom_to_fit_on_resize = False
         self.queue_draw()
 
     def zoom_to_area(self, x1, y1, x2, y2):
@@ -964,6 +969,7 @@ class DotWidget(gtk.DrawingArea):
             float(rect.width)/float(width),
             float(rect.height)/float(height)
         )
+        self.zoom_to_fit_on_resize = False
         self.x = (x1 + x2) / 2
         self.y = (y1 + y2) / 2
         self.queue_draw()
@@ -979,6 +985,7 @@ class DotWidget(gtk.DrawingArea):
             float(rect.height)/float(self.graph.height)
         )
         self.zoom_image(zoom_ratio, center=True)
+        self.zoom_to_fit_on_resize = True
 
     ZOOM_INCREMENT = 1.25
     ZOOM_TO_FIT_MARGIN = 12
@@ -1092,6 +1099,10 @@ class DotWidget(gtk.DrawingArea):
     def on_area_motion_notify(self, area, event):
         self.drag_action.on_motion_notify(event)
         return True
+
+    def on_area_size_allocate(self, area, allocation):
+        if self.zoom_to_fit_on_resize:
+            self.zoom_to_fit()
 
     def animate_to(self, x, y):
         self.animation = ZoomToAnimation(self, x, y)
