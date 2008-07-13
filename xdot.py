@@ -85,6 +85,14 @@ class Shape:
         """Draw this shape with the given cairo context"""
         raise NotImplementedError
 
+    def select_pen(self, highlight):
+        if highlight:
+            if not hasattr(self, 'highlight_pen'):
+                self.highlight_pen = self.pen.highlighted()
+            return self.highlight_pen
+        else:
+            return self.pen
+
 
 class TextShape(Shape):
 
@@ -164,7 +172,7 @@ class TextShape(Shape):
 
         cr.save()
         cr.scale(f, f)
-        cr.set_source_rgba(*self.pen.color)
+        cr.set_source_rgba(*self.select_pen(highlight).color)
         cr.show_layout(layout)
         cr.restore()
 
@@ -187,7 +195,6 @@ class EllipseShape(Shape):
     def __init__(self, pen, x0, y0, w, h, filled=False):
         Shape.__init__(self)
         self.pen = pen.copy()
-        self.highlight_pen = pen.highlighted()
         self.x0 = x0
         self.y0 = y0
         self.w = w
@@ -201,10 +208,7 @@ class EllipseShape(Shape):
         cr.move_to(1.0, 0.0)
         cr.arc(0.0, 0.0, 1.0, 0, 2.0*math.pi)
         cr.restore()
-        if highlight:
-            pen = self.highlight_pen
-        else:
-            pen = self.pen
+        pen = self.select_pen(highlight)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill()
@@ -229,14 +233,15 @@ class PolygonShape(Shape):
         for x, y in self.points:
             cr.line_to(x, y)
         cr.close_path()
+        pen = self.select_pen(highlight)
         if self.filled:
-            cr.set_source_rgba(*self.pen.fillcolor)
+            cr.set_source_rgba(*pen.fillcolor)
             cr.fill_preserve()
             cr.fill()
         else:
-            cr.set_dash(self.pen.dash)
-            cr.set_line_width(self.pen.linewidth)
-            cr.set_source_rgba(*self.pen.color)
+            cr.set_dash(pen.dash)
+            cr.set_line_width(pen.linewidth)
+            cr.set_source_rgba(*pen.color)
             cr.stroke()
 
 
@@ -255,9 +260,10 @@ class BezierShape(Shape):
             x2, y2 = self.points[i + 1]
             x3, y3 = self.points[i + 2]
             cr.curve_to(x1, y1, x2, y2, x3, y3)
-        cr.set_dash(self.pen.dash)
-        cr.set_line_width(self.pen.linewidth)
-        cr.set_source_rgba(*self.pen.color)
+        pen = self.select_pen(highlight)
+        cr.set_dash(pen.dash)
+        cr.set_line_width(pen.linewidth)
+        cr.set_source_rgba(*pen.color)
         cr.stroke()
 
 
