@@ -478,7 +478,7 @@ class XDotParser:
 
         bb = graph.get_bb()
         if bb is None:
-            return []
+            return Graph()
 
         xmin, ymin, xmax, ymax = map(int, bb.split(","))
 
