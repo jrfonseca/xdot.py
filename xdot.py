@@ -140,8 +140,6 @@ class TextShape(Shape):
 
         descent = 2 # XXX get descender from font metrics
 
-        cr.move_to(self.x - self.w/2, self.y)
-
         if self.j == self.LEFT:
             x = self.x
         elif self.j == self.CENTER:
