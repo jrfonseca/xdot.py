@@ -860,6 +860,8 @@ class DotWidget(gtk.DrawingArea):
         'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
     }
 
+    filter = 'dot'
+
     def __init__(self):
         gtk.DrawingArea.__init__(self)
 
@@ -885,9 +887,12 @@ class DotWidget(gtk.DrawingArea):
         self.presstime = None
         self.highlight = None
 
+    def set_filter(self, filter):
+        self.filter = filter
+
     def set_dotcode(self, dotcode, filename='<stdin>'):
         p = subprocess.Popen(
-            [options.filter, '-Txdot'],
+            [self.filter, '-Txdot'],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             shell=False,
@@ -1192,6 +1197,9 @@ class DotWindow(gtk.Window):
 
         self.show_all()
 
+    def set_filter(self, filter):
+        self.widget.set_filter(filter)
+
     def set_dotcode(self, dotcode, filename='<stdin>'):
         if self.widget.set_dotcode(dotcode, filename):
             self.set_title(os.path.basename(filename) + ' - Dot Viewer')
@@ -1232,7 +1240,6 @@ class DotWindow(gtk.Window):
 
 def main():
     import optparse
-    global options
 
     parser = optparse.OptionParser(
         usage='\n\t%prog [file]',
@@ -1249,6 +1256,7 @@ def main():
 
     win = DotWindow()
     win.connect('destroy', gtk.main_quit)
+    win.set_filter(options.filter)
     if len(args) >= 1:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
