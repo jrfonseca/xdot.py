@@ -887,7 +887,7 @@ class DotWidget(gtk.DrawingArea):
 
     def set_dotcode(self, dotcode, filename='<stdin>'):
         p = subprocess.Popen(
-            ['dot', '-Txdot'],
+            [options.filter, '-Txdot'],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             shell=False,
@@ -1232,10 +1232,16 @@ class DotWindow(gtk.Window):
 
 def main():
     import optparse
+    global options
 
     parser = optparse.OptionParser(
-        usage="\n\t%prog [file]",
-        version="%%prog %s" % __version__)
+        usage='\n\t%prog [file]',
+        version='%%prog %s' % __version__)
+    parser.add_option(
+        '-f', '--filter',
+        type='choice', choices=('dot', 'neato', 'twopi', 'circo', 'fdp'),
+        dest='filter', default='dot',
+        help='graphviz filter: dot, neato, twopi, circo, or fdp [default: %default]')
 
     (options, args) = parser.parse_args(sys.argv[1:])
     if len(args) > 1:
