@@ -246,6 +246,25 @@ class PolygonShape(Shape):
             cr.stroke()
 
 
+class LineShape(Shape):
+
+    def __init__(self, pen, points):
+        Shape.__init__(self)
+        self.pen = pen.copy()
+        self.points = points
+
+    def draw(self, cr, highlight=False):
+        x0, y0 = self.points[0]
+        cr.move_to(x0, y0)
+        for x1, y1 in self.points[1:]:
+            cr.line_to(x1, y1)
+        pen = self.select_pen(highlight)
+        cr.set_dash(pen.dash)
+        cr.set_line_width(pen.linewidth)
+        cr.set_source_rgba(*pen.color)
+        cr.stroke()
+
+
 class BezierShape(Shape):
 
     def __init__(self, pen, points):
@@ -543,6 +562,9 @@ class XDotAttrParser:
                 w = s.read_number()
                 h = s.read_number()
                 shapes.append(EllipseShape(pen, x0, y0, w, h))
+            elif op == "L":
+                p = self.read_polygon()
+                shapes.append(LineShape(pen, p))
             elif op == "B":
                 p = self.read_polygon()
                 shapes.append(BezierShape(pen, p))
@@ -621,8 +643,18 @@ class XDotParser:
                     parser = XDotAttrParser(self, getattr(edge, attr))
                     shapes.extend(parser.parse())
             if shapes:
-                src = node_by_name[edge.get_source()]
-                dst = node_by_name[edge.get_destination()]
+                src_name = edge.get_source()
+                dst_name = edge.get_destination()
+                try:
+                    src = node_by_name[src_name]
+                except KeyError:
+                    src_name, src_port = src_name.rsplit(':', 1)
+                    src = node_by_name[src_name]
+                try:
+                    dst = node_by_name[dst_name]
+                except KeyError:
+                    dst_name, dst_port = dst_name.rsplit(':', 1)
+                    dst = node_by_name[dst_name]
                 edges.append(Edge(src, dst, points, shapes))
 
         return Graph(width, height, nodes, edges)
