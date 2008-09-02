@@ -990,10 +990,17 @@ class DotWidget(gtk.DrawingArea):
             self.highlight = items
             self.queue_draw()
 
-    def zoom_image(self, zoom_ratio, center=False):
+    def zoom_image(self, zoom_ratio, center=False, pos=None):
         if center:
             self.x = self.graph.width/2
             self.y = self.graph.height/2
+        elif pos is not None:
+            rect = self.get_allocation()
+            x, y = pos
+            x -= 0.5*rect.width
+            y -= 0.5*rect.height
+            self.x += x / self.zoom_ratio - x / zoom_ratio
+            self.y += y / self.zoom_ratio - y / zoom_ratio
         self.zoom_ratio = zoom_ratio
         self.zoom_to_fit_on_resize = False
         self.queue_draw()
@@ -1126,10 +1133,12 @@ class DotWidget(gtk.DrawingArea):
 
     def on_area_scroll_event(self, area, event):
         if event.direction == gtk.gdk.SCROLL_UP:
-            self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
+            self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT,
+                            pos=(event.x, event.y))
             return True
         if event.direction == gtk.gdk.SCROLL_DOWN:
-            self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
+            self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT,
+                            pos=(event.x, event.y))
             return True
         return False
 
