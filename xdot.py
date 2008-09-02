@@ -597,8 +597,8 @@ class XDotParser:
     def parse(self):
         graph = pydot.graph_from_dot_data(self.xdotcode)
 
-        if graph.bb is None:
-            return GraphParseError()
+        if graph is None:
+            raise GraphParseError()
 
         xmin, ymin, xmax, ymax = map(int, graph.bb.split(","))
 
