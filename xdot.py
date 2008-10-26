@@ -991,6 +991,9 @@ class XDotParser(DotParser):
         except KeyError:
             return
 
+        if not bb:
+            return
+
         xmin, ymin, xmax, ymax = map(int, bb.split(","))
 
         self.xoffset = -xmin
