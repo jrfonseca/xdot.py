@@ -1322,12 +1322,12 @@ class DotWidget(gtk.DrawingArea):
         try:
             self.set_xdotcode(xdotcode)
         except ParseError, ex:
-            error_dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
-                                          message_format=str(ex),
-                                          buttons=gtk.BUTTONS_OK)
-            error_dlg.set_title('Dot Viewer')
-            error_dlg.run()
-            error_dlg.destroy()
+            dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                       message_format=str(ex),
+                                       buttons=gtk.BUTTONS_OK)
+            dialog.set_title('Dot Viewer')
+            dialog.run()
+            dialog.destroy()
             return False
         else:
             return True
@@ -1643,9 +1643,13 @@ class DotWindow(gtk.Window):
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
-        except IOError:
-            # TODO: show an error message
-            pass
+        except IOError, ex:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format=str(ex),
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title('Dot Viewer')
+            dlg.run()
+            dlg.destroy()
 
     def on_open(self, action):
         chooser = gtk.FileChooserDialog(title="Open dot File",
