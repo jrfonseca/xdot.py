@@ -1317,10 +1317,19 @@ class DotWidget(gtk.DrawingArea):
             [self.filter, '-Txdot'],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             shell=False,
             universal_newlines=True
         )
-        xdotcode = p.communicate(dotcode)[0]
+        xdotcode, error = p.communicate(dotcode)
+        if p.returncode != 0:
+            dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                       message_format=error,
+                                       buttons=gtk.BUTTONS_OK)
+            dialog.set_title('Dot Viewer')
+            dialog.run()
+            dialog.destroy()
+            return False
         try:
             self.set_xdotcode(xdotcode)
         except ParseError, ex:
