@@ -263,10 +263,11 @@ class LineShape(Shape):
 
 class BezierShape(Shape):
 
-    def __init__(self, pen, points):
+    def __init__(self, pen, points, filled=False):
         Shape.__init__(self)
         self.pen = pen.copy()
         self.points = points
+        self.filled = filled
 
     def draw(self, cr, highlight=False):
         x0, y0 = self.points[0]
@@ -277,10 +278,15 @@ class BezierShape(Shape):
             x3, y3 = self.points[i + 2]
             cr.curve_to(x1, y1, x2, y2, x3, y3)
         pen = self.select_pen(highlight)
-        cr.set_dash(pen.dash)
-        cr.set_line_width(pen.linewidth)
-        cr.set_source_rgba(*pen.color)
-        cr.stroke()
+        if self.filled:
+            cr.set_source_rgba(*pen.fillcolor)
+            cr.fill_preserve()
+            cr.fill()
+        else:
+            cr.set_dash(pen.dash)
+            cr.set_line_width(pen.linewidth)
+            cr.set_source_rgba(*pen.color)
+            cr.stroke()
 
 
 class CompoundShape(Shape):
@@ -563,6 +569,11 @@ class XDotAttrParser:
                 shapes.append(LineShape(pen, p))
             elif op == "B":
                 p = self.read_polygon()
+                shapes.append(BezierShape(pen, p))
+            elif op == "b":
+                p = self.read_polygon()
+                # xdot uses this to mean "draw a filled shape with an outline"
+                shapes.append(BezierShape(pen, p, filled=True))
                 shapes.append(BezierShape(pen, p))
             elif op == "P":
                 p = self.read_polygon()
