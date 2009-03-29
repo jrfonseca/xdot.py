@@ -450,6 +450,9 @@ class XDotAttrParser:
         self.parser = parser
         self.buf = self.unescape(buf)
         self.pos = 0
+        
+        self.pen = Pen()
+        self.shapes = []
 
     def __nonzero__(self):
         return self.pos < len(self.buf)
@@ -495,7 +498,7 @@ class XDotAttrParser:
             p.append((x, y))
         return p
 
-    def read_color(self, fallback=(0,0,0,1)):
+    def read_color(self):
         # See http://www.graphviz.org/doc/info/attrs.html#k:color
         c = self.read_text()
         c1 = c[:1]
@@ -516,85 +519,129 @@ class XDotAttrParser:
             a = 1.0
             return r, g, b, a
         else:
-            try:
-                color = gtk.gdk.color_parse(c)
-            except ValueError:
-                sys.stderr.write("unknown color '%s'\n" % c)
-                return fallback
-            s = 1.0/65535.0
-            r = color.red*s
-            g = color.green*s
-            b = color.blue*s
-            a = 1.0
-            return r, g, b, a
+            return self.lookup_color(c)
+
+    def lookup_color(self, c):
+        try:
+            color = gtk.gdk.color_parse(c)
+        except ValueError:
+            sys.stderr.write("unknown color '%s'\n" % c)
+            return None
+        s = 1.0/65535.0
+        r = color.red*s
+        g = color.green*s
+        b = color.blue*s
+        a = 1.0
+        return r, g, b, a
 
     def parse(self):
-        shapes = []
-        pen = Pen()
         s = self
 
         while s:
             op = s.read_code()
             if op == "c":
-                pen.color = s.read_color(fallback=pen.color)
+                color = s.read_color()
+                if color is not None:
+                    self.handle_color(color, filled=False)
             elif op == "C":
-                pen.fillcolor = s.read_color(fallback=pen.fillcolor)
+                color = s.read_color()
+                if color is not None:
+                    self.handle_color(color, filled=True)
             elif op == "S":
+                # http://www.graphviz.org/doc/info/attrs.html#k:style
                 style = s.read_text()
                 if style.startswith("setlinewidth("):
                     lw = style.split("(")[1].split(")")[0]
-                    pen.linewidth = float(lw)
-                elif style == "solid":
-                    pen.dash = ()
-                elif style == "dashed":
-                    pen.dash = (6, )       # 6pt on, 6pt off
+                    lw = float(lw)
+                    self.handle_linewidth(lw)
+                elif style in ("solid", "dashed"):
+                    self.handle_linestyle(style)
             elif op == "F":
-                pen.fontsize = s.read_float()
-                pen.fontname = s.read_text()
+                size = s.read_float()
+                name = s.read_text()
+                self.handle_font(size, name)
             elif op == "T":
                 x, y = s.read_point()
                 j = s.read_number()
                 w = s.read_number()
                 t = s.read_text()
-                shapes.append(TextShape(pen, x, y, j, w, t))
+                self.handle_text(x, y, j, w, t)
             elif op == "E":
                 x0, y0 = s.read_point()
                 w = s.read_number()
                 h = s.read_number()
-                # xdot uses this to mean "draw a filled shape with an outline"
-                shapes.append(EllipseShape(pen, x0, y0, w, h, filled=True))
-                shapes.append(EllipseShape(pen, x0, y0, w, h))
+                self.handle_ellipse(x0, y0, w, h, filled=False)
             elif op == "e":
                 x0, y0 = s.read_point()
                 w = s.read_number()
                 h = s.read_number()
-                shapes.append(EllipseShape(pen, x0, y0, w, h))
+                self.handle_ellipse(x0, y0, w, h, filled=False)
             elif op == "L":
-                p = self.read_polygon()
-                shapes.append(LineShape(pen, p))
+                points = self.read_polygon()
+                self.handle_line(points)
             elif op == "B":
-                p = self.read_polygon()
-                shapes.append(BezierShape(pen, p))
+                points = self.read_polygon()
+                self.handle_bezier(points, filled=False)
             elif op == "b":
                 p = self.read_polygon()
-                # xdot uses this to mean "draw a filled shape with an outline"
-                shapes.append(BezierShape(pen, p, filled=True))
-                shapes.append(BezierShape(pen, p))
+                self.handle_bezier(points, filled=True)
             elif op == "P":
-                p = self.read_polygon()
-                # xdot uses this to mean "draw a filled shape with an outline"
-                shapes.append(PolygonShape(pen, p, filled=True))
-                shapes.append(PolygonShape(pen, p))
+                points = self.read_polygon()
+                self.handle_polygon(points, filled=True)
             elif op == "p":
-                p = self.read_polygon()
-                shapes.append(PolygonShape(pen, p))
+                points = self.read_polygon()
+                self.handle_polygon(points, filled=False)
             else:
                 sys.stderr.write("unknown xdot opcode '%s'\n" % op)
                 break
-        return shapes
 
+        return self.shapes
+    
     def transform(self, x, y):
         return self.parser.transform(x, y)
+
+    def handle_color(self, color, filled=False):
+        if filled:
+            self.pen.fillcolor = color
+        else:
+            self.pen.color = color
+
+    def handle_linewidth(self, linewidth):
+        self.pen.linewidth = linewidth
+
+    def handle_linestyle(self, style):
+        if style == "solid":
+            self.pen.dash = ()
+        elif style == "dashed":
+            self.pen.dash = (6, )       # 6pt on, 6pt off
+
+    def handle_font(self, size, name):
+        self.pen.fontsize = size
+        self.pen.fontname = name
+
+    def handle_text(self, x, y, j, w, t):
+        self.shapes.append(TextShape(self.pen, x, y, j, w, t))
+
+    def handle_ecllipse(self, x0, y0, w, h):
+        if filled:
+            # xdot uses this to mean "draw a filled shape with an outline"
+            self.shapes.append(EclipseShape(self.pen, x0, y0, w, h, filled=True))
+        self.shapes.append(PolygonShape(self.pen, x0, y0, w, h))
+
+    def handle_line(self, points):
+        self.shapes.append(LineShape(self.pen, points))
+
+    def handle_bezier(self, points, filled=False):
+        if filled:
+            # xdot uses this to mean "draw a filled shape with an outline"
+            self.shapes.append(BezierShape(self.pen, points, filled=True))
+        self.shapes.append(BezierShape(self.pen, points))
+
+    def handle_polygon(self, points, filled=False):
+        if filled:
+            # xdot uses this to mean "draw a filled shape with an outline"
+            self.shapes.append(PolygonShape(self.pen, points, filled=True))
+        self.shapes.append(PolygonShape(self.pen, points))
 
 
 EOF = -1
