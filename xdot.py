@@ -122,7 +122,12 @@ class TextShape(Shape):
             fo.set_antialias(cairo.ANTIALIAS_DEFAULT)
             fo.set_hint_style(cairo.HINT_STYLE_NONE)
             fo.set_hint_metrics(cairo.HINT_METRICS_OFF)
-            pangocairo.context_set_font_options(context, fo)
+            try:
+                pangocairo.context_set_font_options(context, fo)
+            except TypeError:
+                # XXX: Some broken pangocairo bindings show the error
+                # 'TypeError: font_options must be a cairo.FontOptions or None'
+                pass
 
             # set font
             font = pango.FontDescription()
