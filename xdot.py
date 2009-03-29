@@ -583,7 +583,7 @@ class XDotAttrParser:
                 points = self.read_polygon()
                 self.handle_bezier(points, filled=False)
             elif op == "b":
-                p = self.read_polygon()
+                points = self.read_polygon()
                 self.handle_bezier(points, filled=True)
             elif op == "P":
                 points = self.read_polygon()
