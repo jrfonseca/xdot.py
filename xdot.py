@@ -625,8 +625,8 @@ class XDotAttrParser:
     def handle_ecllipse(self, x0, y0, w, h):
         if filled:
             # xdot uses this to mean "draw a filled shape with an outline"
-            self.shapes.append(EclipseShape(self.pen, x0, y0, w, h, filled=True))
-        self.shapes.append(EclipseShape(self.pen, x0, y0, w, h))
+            self.shapes.append(EllipseShape(self.pen, x0, y0, w, h, filled=True))
+        self.shapes.append(EllipseShape(self.pen, x0, y0, w, h))
 
     def handle_line(self, points):
         self.shapes.append(LineShape(self.pen, points))
