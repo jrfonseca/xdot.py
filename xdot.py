@@ -622,7 +622,7 @@ class XDotAttrParser:
     def handle_text(self, x, y, j, w, t):
         self.shapes.append(TextShape(self.pen, x, y, j, w, t))
 
-    def handle_ecllipse(self, x0, y0, w, h):
+    def handle_ellipse(self, x0, y0, w, h, filled=False):
         if filled:
             # xdot uses this to mean "draw a filled shape with an outline"
             self.shapes.append(EllipseShape(self.pen, x0, y0, w, h, filled=True))
