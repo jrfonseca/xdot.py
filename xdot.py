@@ -570,7 +570,7 @@ class XDotAttrParser:
                 x0, y0 = s.read_point()
                 w = s.read_number()
                 h = s.read_number()
-                self.handle_ellipse(x0, y0, w, h, filled=False)
+                self.handle_ellipse(x0, y0, w, h, filled=True)
             elif op == "e":
                 x0, y0 = s.read_point()
                 w = s.read_number()
