@@ -397,11 +397,12 @@ class Edge(Element):
 
 class Graph(Shape):
 
-    def __init__(self, width=1, height=1, nodes=(), edges=()):
+    def __init__(self, width=1, height=1, shapes=(), nodes=(), edges=()):
         Shape.__init__(self)
 
         self.width = width
         self.height = height
+        self.shapes = shapes
         self.nodes = nodes
         self.edges = edges
 
@@ -416,6 +417,8 @@ class Graph(Shape):
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
         cr.set_line_join(cairo.LINE_JOIN_MITER)
 
+        for shape in self.shapes:
+            shape.draw(cr)
         for edge in self.edges:
             edge.draw(cr, highlight=(edge in highlight_items))
         for node in self.nodes:
@@ -1046,27 +1049,37 @@ class XDotParser(DotParser):
         
         self.nodes = []
         self.edges = []
+        self.shapes = []
         self.node_by_name = {}
+        self.top_graph = True
 
     def handle_graph(self, attrs):
-        try:
-            bb = attrs['bb']
-        except KeyError:
-            return
+        if self.top_graph:
+            try:
+                bb = attrs['bb']
+            except KeyError:
+                return
 
-        if not bb:
-            return
+            if not bb:
+                return
 
-        xmin, ymin, xmax, ymax = map(int, bb.split(","))
+            xmin, ymin, xmax, ymax = map(int, bb.split(","))
 
-        self.xoffset = -xmin
-        self.yoffset = -ymax
-        self.xscale = 1.0
-        self.yscale = -1.0
-        # FIXME: scale from points to pixels
+            self.xoffset = -xmin
+            self.yoffset = -ymax
+            self.xscale = 1.0
+            self.yscale = -1.0
+            # FIXME: scale from points to pixels
 
-        self.width = xmax - xmin
-        self.height = ymax - ymin
+            self.width = xmax - xmin
+            self.height = ymax - ymin
+
+            self.top_graph = False
+        
+        for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
+            if attr in attrs:
+                parser = XDotAttrParser(self, attrs[attr])
+                self.shapes.extend(parser.parse())
 
     def handle_node(self, id, attrs):
         try:
@@ -1108,7 +1121,7 @@ class XDotParser(DotParser):
     def parse(self):
         DotParser.parse(self)
 
-        return Graph(self.width, self.height, self.nodes, self.edges)
+        return Graph(self.width, self.height, self.shapes, self.nodes, self.edges)
 
     def parse_node_pos(self, pos):
         x, y = pos.split(",")
