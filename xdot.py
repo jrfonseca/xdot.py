@@ -1362,6 +1362,7 @@ class DotWidget(gtk.DrawingArea):
         gtk.DrawingArea.__init__(self)
 
         self.graph = Graph()
+        self.openfilename = None
 
         self.set_flags(gtk.CAN_FOCUS)
 
@@ -1417,6 +1418,7 @@ class DotWidget(gtk.DrawingArea):
             dialog.destroy()
             return False
         else:
+            self.openfilename = filename
             return True
 
     def set_xdotcode(self, xdotcode):
@@ -1550,6 +1552,15 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.Escape:
             self.drag_action.abort()
             self.drag_action = NullAction(self)
+            return True
+        if event.keyval == gtk.keysyms.r:
+            if self.openfilename is not None:
+                try:
+                    fp = file(self.openfilename, 'rt')
+                    self.set_dotcode(fp.read(), self.openfilename)
+                    fp.close()
+                except IOError, ex:
+                    pass
             return True
         return False
 
