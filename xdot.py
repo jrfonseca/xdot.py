@@ -1063,7 +1063,7 @@ class XDotParser(DotParser):
             if not bb:
                 return
 
-            xmin, ymin, xmax, ymax = map(int, bb.split(","))
+            xmin, ymin, xmax, ymax = map(float, bb.split(","))
 
             self.xoffset = -xmin
             self.yoffset = -ymax
