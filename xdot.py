@@ -1739,6 +1739,18 @@ class DotWindow(gtk.Window):
 
         self.show_all()
 
+    def update(self, filename):
+        import os
+        if not hasattr(self, "last_mtime"):
+            self.last_mtime = None
+
+        current_mtime = os.stat(filename).st_mtime
+        if current_mtime != self.last_mtime:
+            self.last_mtime = current_mtime
+            self.open_file(filename)
+
+        return True
+
     def set_filter(self, filter):
         self.widget.set_filter(filter)
 
@@ -1813,6 +1825,7 @@ def main():
             win.set_dotcode(sys.stdin.read())
         else:
             win.open_file(args[0])
+            gtk.timeout_add(1000, win.update, args[0])
     gtk.main()
 
 
