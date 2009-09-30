@@ -1451,6 +1451,15 @@ class DotWidget(gtk.DrawingArea):
         self.graph = parser.parse()
         self.zoom_image(self.zoom_ratio, center=True)
 
+    def reload(self):
+        if self.openfilename is not None:
+            try:
+                fp = file(self.openfilename, 'rt')
+                self.set_dotcode(fp.read(), self.openfilename)
+                fp.close()
+            except IOError:
+                pass
+
     def do_expose_event(self, event):
         cr = self.window.cairo_create()
 
@@ -1578,13 +1587,7 @@ class DotWidget(gtk.DrawingArea):
             self.drag_action = NullAction(self)
             return True
         if event.keyval == gtk.keysyms.r:
-            if self.openfilename is not None:
-                try:
-                    fp = file(self.openfilename, 'rt')
-                    self.set_dotcode(fp.read(), self.openfilename)
-                    fp.close()
-                except IOError, ex:
-                    pass
+            self.reload()
             return True
         return False
 
@@ -1688,6 +1691,7 @@ class DotWindow(gtk.Window):
     <ui>
         <toolbar name="ToolBar">
             <toolitem action="Open"/>
+            <toolitem action="Reload"/>
             <separator/>
             <toolitem action="ZoomIn"/>
             <toolitem action="ZoomOut"/>
@@ -1725,6 +1729,7 @@ class DotWindow(gtk.Window):
         # Create actions
         actiongroup.add_actions((
             ('Open', gtk.STOCK_OPEN, None, None, None, self.on_open),
+            ('Reload', gtk.STOCK_REFRESH, None, None, None, self.on_reload),
             ('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, None, self.widget.on_zoom_in),
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
@@ -1807,6 +1812,9 @@ class DotWindow(gtk.Window):
             self.open_file(filename)
         else:
             chooser.destroy()
+
+    def on_reload(self, action):
+        self.widget.reload()
 
 
 def main():
