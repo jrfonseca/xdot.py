@@ -1264,11 +1264,15 @@ class DragAction(object):
         self.start()
 
     def on_motion_notify(self, event):
-        deltax = self.prevmousex - event.x
-        deltay = self.prevmousey - event.y
+        if event.is_hint:
+            x, y, state = event.window.get_pointer()
+        else:
+            x, y, state = event.x, event.y, event.state
+        deltax = self.prevmousex - x
+        deltay = self.prevmousey - y
         self.drag(deltax, deltay)
-        self.prevmousex = event.x
-        self.prevmousey = event.y
+        self.prevmousex = x
+        self.prevmousey = y
 
     def on_button_release(self, event):
         self.stopmousex = event.x
@@ -1294,10 +1298,14 @@ class DragAction(object):
 class NullAction(DragAction):
 
     def on_motion_notify(self, event):
+        if event.is_hint:
+            x, y, state = event.window.get_pointer()
+        else:
+            x, y, state = event.x, event.y, event.state
         dot_widget = self.dot_widget
-        item = dot_widget.get_url(event.x, event.y)
+        item = dot_widget.get_url(x, y)
         if item is None:
-            item = dot_widget.get_jump(event.x, event.y)
+            item = dot_widget.get_jump(x, y)
         if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
             dot_widget.set_highlight(item.highlight)
