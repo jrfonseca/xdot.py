@@ -1825,7 +1825,7 @@ def main():
             win.set_dotcode(sys.stdin.read())
         else:
             win.open_file(args[0])
-            gtk.timeout_add(1000, win.update, args[0])
+            gobject.timeout_add(1000, win.update, args[0])
     gtk.main()
 
 
