@@ -1589,6 +1589,9 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.r:
             self.reload()
             return True
+        if event.keyval == gtk.keysyms.q:
+            gtk.main_quit()
+            return True
         return False
 
     def get_drag_action(self, event):
