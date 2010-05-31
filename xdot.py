@@ -1104,8 +1104,8 @@ class XDotParser(DotParser):
             return
 
         x, y = self.parse_node_pos(pos)
-        w = float(attrs['width'])*72
-        h = float(attrs['height'])*72
+        w = float(attrs.get('width', 0))*72
+        h = float(attrs.get('height', 0))*72
         shapes = []
         for attr in ("_draw_", "_ldraw_"):
             if attr in attrs:
