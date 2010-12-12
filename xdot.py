@@ -192,6 +192,30 @@ class TextShape(Shape):
             cr.stroke()
 
 
+class ImageShape(Shape):
+
+    def __init__(self, pen, x0, y0, w, h, path):
+        Shape.__init__(self)
+        self.pen = pen.copy()
+        self.x0 = x0
+        self.y0 = y0
+        self.w = w
+        self.h = h
+        self.path = path
+
+    def draw(self, cr, highlight=False):
+        cr2 = gtk.gdk.CairoContext(cr)
+        pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
+        sx = float(self.w)/float(pixbuf.get_width())
+        sy = float(self.h)/float(pixbuf.get_height())
+        cr.save()
+        cr.translate(self.x0, self.y0 - self.h)
+        cr.scale(sx, sy)
+        cr2.set_source_pixbuf(pixbuf, 0, 0)
+        cr2.paint()
+        cr.restore()
+
+
 class EllipseShape(Shape):
 
     def __init__(self, pen, x0, y0, w, h, filled=False):
@@ -610,6 +634,12 @@ class XDotAttrParser:
             elif op == "p":
                 points = self.read_polygon()
                 self.handle_polygon(points, filled=False)
+            elif op == "I":
+                x0, y0 = s.read_point()
+                w = s.read_number()
+                h = s.read_number()
+                path = s.read_text()
+                self.handle_image(x0, y0, w, h, path)
             else:
                 sys.stderr.write("unknown xdot opcode '%s'\n" % op)
                 break
@@ -646,6 +676,9 @@ class XDotAttrParser:
             # xdot uses this to mean "draw a filled shape with an outline"
             self.shapes.append(EllipseShape(self.pen, x0, y0, w, h, filled=True))
         self.shapes.append(EllipseShape(self.pen, x0, y0, w, h))
+
+    def handle_image(self, x0, y0, w, h, path):
+        self.shapes.append(ImageShape(self.pen, x0, y0, w, h, path))
 
     def handle_line(self, points):
         self.shapes.append(LineShape(self.pen, points))
