@@ -1458,6 +1458,7 @@ class DotWidget(gtk.DrawingArea):
             universal_newlines=True
         )
         xdotcode, error = p.communicate(dotcode)
+        sys.stderr.write(error)
         if p.returncode != 0:
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=error,
