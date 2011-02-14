@@ -1610,11 +1610,16 @@ class DotWidget(gtk.DrawingArea):
             self.y += self.POS_INCREMENT/self.zoom_ratio
             self.queue_draw()
             return True
-        if event.keyval == gtk.keysyms.Page_Up:
+        if event.keyval in (gtk.keysyms.Page_Up,
+                            gtk.keysyms.plus,
+                            gtk.keysyms.equal,
+                            gtk.keysyms.KP_Add):
             self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT)
             self.queue_draw()
             return True
-        if event.keyval == gtk.keysyms.Page_Down:
+        if event.keyval in (gtk.keysyms.Page_Down,
+                            gtk.keysyms.minus,
+                            gtk.keysyms.KP_Subtract):
             self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT)
             self.queue_draw()
             return True
