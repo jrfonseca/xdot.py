@@ -1446,9 +1446,9 @@ class DotWidget(gtk.DrawingArea):
     def set_filter(self, filter):
         self.filter = filter
 
-    def set_dotcode(self, dotcode, filename='<stdin>'):
-        if isinstance(dotcode, unicode):
-            dotcode = dotcode.encode('utf8')
+    def run_filter(self, dotcode):
+        if not self.filter:
+            return dotcode
         p = subprocess.Popen(
             [self.filter, '-Txdot'],
             stdin=subprocess.PIPE,
@@ -1466,6 +1466,14 @@ class DotWidget(gtk.DrawingArea):
             dialog.set_title('Dot Viewer')
             dialog.run()
             dialog.destroy()
+            return None
+        return xdotcode
+
+    def set_dotcode(self, dotcode, filename='<stdin>'):
+        if isinstance(dotcode, unicode):
+            dotcode = dotcode.encode('utf8')
+        xdotcode = self.run_filter(dotcode)
+        if xdotcode is None:
             return False
         try:
             self.set_xdotcode(xdotcode)
@@ -1872,6 +1880,10 @@ def main():
         type='choice', choices=('dot', 'neato', 'twopi', 'circo', 'fdp'),
         dest='filter', default='dot',
         help='graphviz filter: dot, neato, twopi, circo, or fdp [default: %default]')
+    parser.add_option(
+        '-n', '--no-filter',
+        action='store_const', const=None, dest='filter',
+        help='assume input is already filtered into xdot format (use e.g. dot -Txdot)')
 
     (options, args) = parser.parse_args(sys.argv[1:])
     if len(args) > 1:
