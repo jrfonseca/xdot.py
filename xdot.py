@@ -1122,8 +1122,8 @@ class XDotParser(DotParser):
             self.yscale = -1.0
             # FIXME: scale from points to pixels
 
-            self.width = xmax - xmin
-            self.height = ymax - ymin
+            self.width  = max(xmax - xmin, 1)
+            self.height = max(ymax - ymin, 1)
 
             self.top_graph = False
         
