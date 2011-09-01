@@ -475,7 +475,7 @@ class XDotAttrParser:
 
     def __init__(self, parser, buf):
         self.parser = parser
-        self.buf = self.unescape(buf)
+        self.buf = buf
         self.pos = 0
         
         self.pen = Pen()
@@ -483,11 +483,6 @@ class XDotAttrParser:
 
     def __nonzero__(self):
         return self.pos < len(self.buf)
-
-    def unescape(self, buf):
-        buf = buf.replace('\\"', '"')
-        buf = buf.replace('\\n', '\n')
-        return buf
 
     def read_code(self):
         pos = self.buf.find(" ", self.pos)
@@ -957,10 +952,11 @@ class DotLexer(Lexer):
             text = text.replace('\\\r', '')
             text = text.replace('\\\n', '')
             
-            text = text.replace('\\r', '\r')
-            text = text.replace('\\n', '\n')
-            text = text.replace('\\t', '\t')
-            text = text.replace('\\', '')
+            # quotes
+            text = text.replace('\\"', '"')
+
+            # layout engines recognize other escape codes (many non-standard)
+            # but we don't translate them here
 
             type = ID
 
