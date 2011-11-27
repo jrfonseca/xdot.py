@@ -1430,6 +1430,9 @@ class DotWidget(gtk.DrawingArea):
         self.connect("size-allocate", self.on_area_size_allocate)
 
         self.connect('key-press-event', self.on_key_press_event)
+        self.last_mtime = None
+
+        gobject.timeout_add(1000, self.update)
 
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
@@ -1465,7 +1468,8 @@ class DotWidget(gtk.DrawingArea):
             return None
         return xdotcode
 
-    def set_dotcode(self, dotcode, filename='<stdin>'):
+    def set_dotcode(self, dotcode, filename=None):
+        self.openfilename = None
         if isinstance(dotcode, unicode):
             dotcode = dotcode.encode('utf8')
         xdotcode = self.run_filter(dotcode)
@@ -1482,6 +1486,10 @@ class DotWidget(gtk.DrawingArea):
             dialog.destroy()
             return False
         else:
+            if filename is None:
+                self.last_mtime = None
+            else:
+                self.last_mtime = os.stat(filename).st_mtime
             self.openfilename = filename
             return True
 
@@ -1499,6 +1507,14 @@ class DotWidget(gtk.DrawingArea):
                 fp.close()
             except IOError:
                 pass
+
+    def update(self):
+        if self.openfilename is not None:
+            current_mtime = os.stat(self.openfilename).st_mtime
+            if current_mtime != self.last_mtime:
+                self.last_mtime = current_mtime
+                self.reload()
+        return True
 
     def do_expose_event(self, event):
         cr = self.window.cairo_create()
@@ -1749,6 +1765,8 @@ class DotWindow(gtk.Window):
     </ui>
     '''
 
+    base_title = 'Dot Viewer'
+
     def __init__(self):
         gtk.Window.__init__(self)
 
@@ -1756,7 +1774,7 @@ class DotWindow(gtk.Window):
 
         window = self
 
-        window.set_title('Dot Viewer')
+        window.set_title(self.base_title)
         window.set_default_size(512, 512)
         vbox = gtk.VBox()
         window.add(vbox)
@@ -1800,30 +1818,24 @@ class DotWindow(gtk.Window):
 
         self.show_all()
 
-    def update(self, filename):
-        import os
-        if not hasattr(self, "last_mtime"):
-            self.last_mtime = None
-
-        current_mtime = os.stat(filename).st_mtime
-        if current_mtime != self.last_mtime:
-            self.last_mtime = current_mtime
-            self.open_file(filename)
-
-        return True
-
     def set_filter(self, filter):
         self.widget.set_filter(filter)
 
-    def set_dotcode(self, dotcode, filename='<stdin>'):
+    def set_dotcode(self, dotcode, filename=None):
         if self.widget.set_dotcode(dotcode, filename):
-            self.set_title(os.path.basename(filename) + ' - Dot Viewer')
+            self.update_title(filename)
             self.widget.zoom_to_fit()
 
-    def set_xdotcode(self, xdotcode, filename='<stdin>'):
+    def set_xdotcode(self, xdotcode, filename=None):
         if self.widget.set_xdotcode(xdotcode):
-            self.set_title(os.path.basename(filename) + ' - Dot Viewer')
+            self.update_title(filename)
             self.widget.zoom_to_fit()
+        
+    def update_title(self, filename=None):
+        if filename is None:
+            self.set_title(self.base_title)
+        else:
+            self.set_title(os.path.basename(filename) + ' - ' + self.base_title)
 
     def open_file(self, filename):
         try:
@@ -1834,7 +1846,7 @@ class DotWindow(gtk.Window):
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
-            dlg.set_title('Dot Viewer')
+            dlg.set_title(self.base_title)
             dlg.run()
             dlg.destroy()
 
@@ -1893,7 +1905,6 @@ def main():
             win.set_dotcode(sys.stdin.read())
         else:
             win.open_file(args[0])
-            gobject.timeout_add(1000, win.update, args[0])
     gtk.main()
 
 
