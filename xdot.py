@@ -1861,7 +1861,10 @@ class DotWindow(gtk.Window):
         try:
             filename = os.path.abspath(filename)
             directory = os.path.dirname(filename)
-            self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')])
+            sori = lambda x: (int(x) if x.isdigit() else x) # returns s(tring) or i(nteger)
+            natkey = lambda x: [sori(y) for y in re.split(r'(\d+)', x)]
+            self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')],
+                                        key=natkey)
             self.file_index = self.files_in_dir.index(filename)
         except Exception as ex:
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
