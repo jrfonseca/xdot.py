@@ -1761,6 +1761,10 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomOut"/>
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
+            <separator/>
+            <toolitem action="Previous"/>
+            <toolitem action="Next"/>
+            <toolitem action="Quit"/>
         </toolbar>
     </ui>
     '''
@@ -1800,6 +1804,9 @@ class DotWindow(gtk.Window):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+            ('Previous', gtk.STOCK_GO_BACK, None, None, None, self.on_prev),
+            ('Next', gtk.STOCK_GO_FORWARD, None, None, None, self.on_next),
+            ('Quit', gtk.STOCK_QUIT, None, None, None, self.on_quit),
         ))
 
         # Add the actiongroup to the uimanager
@@ -1850,6 +1857,20 @@ class DotWindow(gtk.Window):
             dlg.run()
             dlg.destroy()
 
+    def build_file_list(self, filename):
+        try:
+            filename = os.path.abspath(filename)
+            directory = os.path.dirname(filename)
+            self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')])
+            self.file_index = self.files_in_dir.index(filename)
+        except Exception as ex:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format=str(ex),
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title(self.base_title)
+            dlg.run()
+            dlg.destroy()
+
     def on_open(self, action):
         chooser = gtk.FileChooserDialog(title="Open dot File",
                                         action=gtk.FILE_CHOOSER_ACTION_OPEN,
@@ -1869,12 +1890,36 @@ class DotWindow(gtk.Window):
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
             chooser.destroy()
+            self.build_file_list(filename)
             self.open_file(filename)
         else:
             chooser.destroy()
 
     def on_reload(self, action):
         self.widget.reload()
+
+    def on_quit(self, action):
+        gtk.main_quit()
+
+    def on_prev(self, action):
+        try:
+            self.file_index -= 1
+            if self.file_index > len(self.files_in_dir):
+                self.file_index = 0
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_next(self, action):
+        try:
+            self.file_index += 1
+            if self.file_index < 0:
+                self.file_index = len(self.files_in_dir)-1
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
 
 
 def main():
@@ -1904,6 +1949,7 @@ def main():
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
         else:
+            win.build_file_list(args[0])
             win.open_file(args[0])
     gtk.main()
 
