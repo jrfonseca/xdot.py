@@ -1904,19 +1904,19 @@ class DotWindow(gtk.Window):
     def on_quit(self, action):
         gtk.main_quit()
 
-    def on_prev(self, action):
+    def on_next(self, action):
         try:
-            self.file_index -= 1
-            if self.file_index > len(self.files_in_dir):
+            self.file_index += 1
+            if self.file_index >= len(self.files_in_dir):
                 self.file_index = 0
             self.open_file(self.files_in_dir[self.file_index])
         except:
             # can happen when the button is pushed with no file loaded
             pass
 
-    def on_next(self, action):
+    def on_prev(self, action):
         try:
-            self.file_index += 1
+            self.file_index -= 1
             if self.file_index < 0:
                 self.file_index = len(self.files_in_dir)-1
             self.open_file(self.files_in_dir[self.file_index])
