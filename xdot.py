@@ -1785,6 +1785,8 @@ class DotWindow(gtk.Window):
 
         self.widget = DotWidget()
 
+        self.connect('key-press-event', self.on_window_key_press_event)
+
         # Create a UIManager instance
         uimanager = self.uimanager = gtk.UIManager()
 
@@ -1923,6 +1925,18 @@ class DotWindow(gtk.Window):
         except:
             # can happen when the button is pushed with no file loaded
             pass
+
+    def on_window_key_press_event(self, widget, event):
+        if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
+            self.on_prev(None)
+            return True
+        if event.keyval == gtk.keysyms.n or event.keyval == gtk.keysyms.k:
+            self.on_next(None)
+            return True
+        if event.keyval == gtk.keysyms.o:
+            self.on_open(None)
+            return True
+        return False
 
 
 def main():
