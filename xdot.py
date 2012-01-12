@@ -1892,6 +1892,12 @@ class DotWindow(gtk.Window):
         filter.set_name("All files")
         filter.add_pattern("*")
         chooser.add_filter(filter)
+        try:
+            chooser.set_current_folder(os.path.dirname(self.files_in_dir[0]))
+        except AttributeError:
+            pass # May happen on the first call, because self.files_in_dir would not exist
+        except:
+            raise
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
             chooser.destroy()
