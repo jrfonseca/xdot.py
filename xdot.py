@@ -1821,6 +1821,14 @@ class DotWindow(gtk.Window):
         toolbar = uimanager.get_widget('/ToolBar')
         vbox.pack_start(toolbar, False)
 
+        # Create a text entry box for the filename
+        file_entry = gtk.Entry()
+        self.file_entry = file_entry
+        file_entry.set_has_frame(True)
+        file_entry.set_text('')
+        file_entry.connect("activate", self.on_text_open)
+        vbox.pack_start(file_entry, False)
+
         vbox.pack_start(self.widget)
 
         self.set_focus(self.widget)
@@ -1848,6 +1856,7 @@ class DotWindow(gtk.Window):
 
     def open_file(self, filename):
         try:
+            self.file_entry.set_text(filename)
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
@@ -1859,15 +1868,22 @@ class DotWindow(gtk.Window):
             dlg.run()
             dlg.destroy()
 
-    def build_file_list(self, filename):
+    def build_file_list(self, filepath):
         try:
-            filename = os.path.abspath(filename)
-            directory = os.path.dirname(filename)
+            filepath = os.path.abspath(filepath)
+            if os.path.isdir(filepath):
+                directory = filepath
+            else:
+                directory = os.path.dirname(filepath)
             sori = lambda x: (int(x) if x.isdigit() else x) # returns s(tring) or i(nteger)
             natkey = lambda x: [sori(y) for y in re.split(r'(\d+)', x)]
             self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')],
                                         key=natkey)
-            self.file_index = self.files_in_dir.index(filename)
+            if os.path.isdir(filepath):
+                self.file_index = 0
+            else:
+                self.file_index = self.files_in_dir.index(filepath)
+            self.file_dir   = directory
         except Exception as ex:
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
@@ -1893,9 +1909,9 @@ class DotWindow(gtk.Window):
         filter.add_pattern("*")
         chooser.add_filter(filter)
         try:
-            chooser.set_current_folder(os.path.dirname(self.files_in_dir[0]))
+            chooser.set_current_folder(self.file_dir)
         except AttributeError:
-            pass # May happen on the first call, because self.files_in_dir would not exist
+            pass # Will happen on the first call, because self.file_dir would not exist
         except:
             raise
         if chooser.run() == gtk.RESPONSE_OK:
@@ -1905,6 +1921,23 @@ class DotWindow(gtk.Window):
             self.open_file(filename)
         else:
             chooser.destroy()
+
+    def on_text_open(self, action):
+        fileentry = self.file_entry.get_text()
+        if os.path.exists(fileentry):
+            fileentry = os.path.abspath(fileentry)
+            self.file_entry.set_text(fileentry)
+            self.file_entry.set_position(1000) # some large number to push the cursor to the end
+
+        if os.path.isfile(fileentry):
+            self.build_file_list(fileentry)
+            self.open_file(fileentry)
+            self.child_focus(gtk.DIR_TAB_FORWARD)
+        elif os.path.isdir(fileentry):
+            self.build_file_list(fileentry)
+            if self.files_in_dir:              # found .dot files
+                self.open_file(self.files_in_dir[0])
+                self.child_focus(gtk.DIR_TAB_FORWARD)
 
     def on_reload(self, action):
         self.widget.reload()
@@ -1933,6 +1966,8 @@ class DotWindow(gtk.Window):
             pass
 
     def on_window_key_press_event(self, widget, event):
+        if self.file_entry.is_focus():
+            return False
         if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
             self.on_prev(None)
             return True
