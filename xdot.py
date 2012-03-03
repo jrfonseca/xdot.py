@@ -44,6 +44,8 @@ import pangocairo
 # - http://mirageiv.berlios.de/
 # - http://comix.sourceforge.net/
 
+def filterlist(l, expr):
+    return map(lambda i: l[i], filter(lambda i: isinstance(l[i], expr), range(len(l))))
 
 class Pen:
     """Store pen attributes."""
@@ -1292,6 +1294,22 @@ class DragAction(object):
         self.startmousey = self.prevmousey = event.y
         self.start()
 
+        dot_widget = self.dot_widget
+        item = dot_widget.get_url(event.x, event.y)
+        if item is None:
+            item = dot_widget.get_jump(event.x, event.y)
+
+        if item is not None and isinstance(item.item, Node):
+            src = filterlist(item.item.shapes, TextShape)
+            print "# src", src[0].t
+            for edge in dot_widget.graph.edges:
+                if edge.src == item.item:
+                    dst = filterlist(edge.dst.shapes, TextShape)
+                    print "dst", dst[0].t
+                    #dstitem = dot_widget.get_jump(edge.dst.x, edge.dst.y);
+                    #dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
+                    #dot_widget.set_highlight(dstitem.highlight)
+
     def on_motion_notify(self, event):
         if event.is_hint:
             x, y, state = event.window.get_pointer()
@@ -1766,6 +1784,16 @@ class DotWidget(gtk.DrawingArea):
         self.animation = ZoomToAnimation(self, x, y)
         self.animation.start()
 
+    def graph2window(self, x, y):
+        rect = self.get_allocation()
+        x -= self.x
+        y -= self.y
+        x *= self.zoom_ratio
+        y *= self.zoom_ratio
+        x += 0.5 * rect.width
+        y += 0.5 * rect.height
+        return x, y
+
     def window2graph(self, x, y):
         rect = self.get_allocation()
         x -= 0.5*rect.width
@@ -1854,7 +1882,40 @@ class DotWindow(gtk.Window):
 
         self.set_focus(self.widget)
 
+        # Add Find text search
+        self.textentry = gtk.Entry(max=20)
+        vbox.pack_start(self.textentry, False)
+        self.textentry.set_activates_default(True)
+        self.textentry.connect ("activate", self.textentry_activate, self.textentry);
+
         self.show_all()
+
+    def textentry_activate(self, widget, entry):
+        entry_text = entry.get_text()
+        dot_widget = self.widget
+        for node in dot_widget.graph.nodes:
+            text = filterlist(node.shapes, TextShape)
+            if re.match (entry_text, text[0].t):
+                print "found:", entry_text ,"at", node, node.x, node.y
+                press = gtk.gdk.Event(gtk.gdk.BUTTON_PRESS)
+                release = gtk.gdk.Event(gtk.gdk.BUTTON_RELEASE)
+                press.button = release.button = 1
+                press.x, press.y, = dot_widget.graph2window(node.x, node.y)
+                release.x, release.y, = dot_widget.graph2window(node.x, node.y)
+
+                dot_widget.on_area_button_press(None, press)
+                dot_widget.on_area_button_release(None, release)
+
+    def update(self, filename):
+        if not hasattr(self, "last_mtime"):
+            self.last_mtime = None
+
+        current_mtime = os.stat(filename).st_mtime
+        if current_mtime != self.last_mtime:
+            self.last_mtime = current_mtime
+            self.open_file(filename)
+
+        return True
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
