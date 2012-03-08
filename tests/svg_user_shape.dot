@@ -1,0 +1,5 @@
+digraph G {
+  n [label="", shapefile="sample.svg"]
+  x [width=3, height=3, label="", shapefile="sample.svg"]
+  m -> n -> x
+}
