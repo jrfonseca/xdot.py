@@ -1813,6 +1813,14 @@ class DotWidget(gtk.DrawingArea):
         return self.graph.get_jump(x, y)
 
 
+class FindMenuToolAction(gtk.Action):
+    __gtype_name__ = "FindMenuToolAction"
+
+    def __init__(self, *args, **kw):
+        gtk.Action.__init__(self, *args, **kw)
+        self.set_tool_item_type(gtk.ToolItem)
+
+
 class DotWindow(gtk.Window):
 
     ui = '''
@@ -1826,6 +1834,8 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomOut"/>
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
+            <separator/>
+            <toolitem name="Find" action="Find"/>
         </toolbar>
     </ui>
     '''
@@ -1868,6 +1878,11 @@ class DotWindow(gtk.Window):
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
         ))
 
+        find_action = FindMenuToolAction("Find", None,
+                                          "Find a node by name", None)
+        #find_action.set_tool_item_type(gtk.ToolItem)
+        actiongroup.add_action(find_action)
+
         # Add the actiongroup to the uimanager
         uimanager.insert_action_group(actiongroup, 0)
 
@@ -1883,28 +1898,48 @@ class DotWindow(gtk.Window):
         self.set_focus(self.widget)
 
         # Add Find text search
+        find_toolitem = uimanager.get_widget('/ToolBar/Find')
         self.textentry = gtk.Entry(max=20)
-        vbox.pack_start(self.textentry, False)
+        self.textentry.set_icon_from_stock(0, gtk.STOCK_FIND)
+        find_toolitem.add(self.textentry)
+
         self.textentry.set_activates_default(True)
         self.textentry.connect ("activate", self.textentry_activate, self.textentry);
+        self.textentry.connect ("changed", self.textentry_changed, self.textentry);
 
         self.show_all()
 
-    def textentry_activate(self, widget, entry):
-        entry_text = entry.get_text()
+    def find_text(self, entry_text):
+        found_items = []
         dot_widget = self.widget
         for node in dot_widget.graph.nodes:
             text = filterlist(node.shapes, TextShape)
-            if re.match (entry_text, text[0].t):
-                print "found:", entry_text ,"at", node, node.x, node.y
-                press = gtk.gdk.Event(gtk.gdk.BUTTON_PRESS)
-                release = gtk.gdk.Event(gtk.gdk.BUTTON_RELEASE)
-                press.button = release.button = 1
-                press.x, press.y, = dot_widget.graph2window(node.x, node.y)
-                release.x, release.y, = dot_widget.graph2window(node.x, node.y)
+            if re.search (entry_text, text[0].t):
+                #print "found:", entry_text ,"at", node, node.x, node.y
+                found_items.append(node)
+        return found_items
 
-                dot_widget.on_area_button_press(None, press)
-                dot_widget.on_area_button_release(None, release)
+    def textentry_changed(self, widget, entry):
+        entry_text = entry.get_text()
+        dot_widget = self.widget        
+        if not entry_text:
+            dot_widget.set_highlight(None)
+            return
+        
+        found_items = self.find_text(entry_text)
+        dot_widget.set_highlight(found_items)
+
+    def textentry_activate(self, widget, entry):
+        entry_text = entry.get_text()
+        dot_widget = self.widget        
+        if not entry_text:
+            dot_widget.set_highlight(None)
+            return;
+        
+        found_items = self.find_text(entry_text)
+        dot_widget.set_highlight(found_items)
+        if(len(found_items) == 1):
+            dot_widget.animate_to(found_items[0].x, found_items[0].y)
 
     def update(self, filename):
         if not hasattr(self, "last_mtime"):
