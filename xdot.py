@@ -1653,7 +1653,41 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.q:
             gtk.main_quit()
             return True
+        if event.keyval == gtk.keysyms.p:
+            self.on_print()
+            return True
         return False
+
+    print_settings = None
+    def on_print(self, action=None):
+        print_op = gtk.PrintOperation()
+
+        if self.print_settings != None:
+            print_op.set_print_settings(self.print_settings)
+
+        print_op.connect("begin_print", self.begin_print)
+        print_op.connect("draw_page", self.draw_page)
+
+        res = print_op.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG, self.parent.parent)
+
+        if res == gtk.PRINT_OPERATION_RESULT_APPLY:
+            print_settings = print_op.get_print_settings()
+
+    def begin_print(self, operation, context):
+        operation.set_n_pages(1)
+        #operation.set_support_selection(True)
+        #operation.set_has_selection(True)
+        return True
+
+    def draw_page(self, operation, context, page_nr):
+        cr = context.get_cairo_context()
+
+        rect = self.get_allocation()
+        cr.translate(0.5*rect.width, 0.5*rect.height)
+        cr.scale(self.zoom_ratio, self.zoom_ratio)
+        cr.translate(-self.x, -self.y)
+
+        self.graph.draw(cr, highlight_items=self.highlight)
 
     def get_drag_action(self, event):
         state = event.state
@@ -1756,6 +1790,7 @@ class DotWindow(gtk.Window):
         <toolbar name="ToolBar">
             <toolitem action="Open"/>
             <toolitem action="Reload"/>
+            <toolitem action="Print"/>
             <separator/>
             <toolitem action="ZoomIn"/>
             <toolitem action="ZoomOut"/>
@@ -1796,6 +1831,7 @@ class DotWindow(gtk.Window):
         actiongroup.add_actions((
             ('Open', gtk.STOCK_OPEN, None, None, None, self.on_open),
             ('Reload', gtk.STOCK_REFRESH, None, None, None, self.on_reload),
+            ('Print', gtk.STOCK_PRINT, None, None, "Prints the currently visible part of the graph", self.widget.on_print),
             ('ZoomIn', gtk.STOCK_ZOOM_IN, None, None, None, self.widget.on_zoom_in),
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
