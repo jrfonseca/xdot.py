@@ -477,6 +477,14 @@ class Graph(Shape):
         for node in self.nodes:
             node.draw(cr, highlight=(node in highlight_items))
 
+    def get_element(self, x, y):
+        for node in self.nodes:
+            if node.is_inside(x, y):
+                return node
+        for edge in self.edges:
+            if edge.is_inside(x, y):
+                return edge
+
     def get_url(self, x, y):
         for node in self.nodes:
             url = node.get_url(x, y)
@@ -1809,6 +1817,10 @@ class DotWidget(gtk.DrawingArea):
         x += self.x
         y += self.y
         return x, y
+
+    def get_element(self, x, y):
+        x, y = self.window2graph(x, y)
+        return self.graph.get_element(x, y)
 
     def get_url(self, x, y):
         x, y = self.window2graph(x, y)
