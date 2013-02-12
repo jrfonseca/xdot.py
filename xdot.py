@@ -363,6 +363,9 @@ class Element(CompoundShape):
     def __init__(self, shapes):
         CompoundShape.__init__(self, shapes)
 
+    def is_inside(self, x, y):
+        return False
+
     def get_url(self, x, y):
         return None
 
@@ -421,10 +424,23 @@ class Edge(Element):
 
     RADIUS = 10
 
+    def is_inside_begin(self, x, y):
+        return square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS
+
+    def is_inside_end(self, x, y):
+        return square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS
+
+    def is_inside(self, x, y):
+        if self.is_inside_begin(x, y):
+            return True
+        if self.is_inside_end(x, y):
+            return True
+        return False
+
     def get_jump(self, x, y):
-        if square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS:
+        if self.is_inside_begin(x, y):
             return Jump(self, self.dst.x, self.dst.y, highlight=set([self, self.dst]))
-        if square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS:
+        if self.is_inside_end(x, y):
             return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
         return None
 
