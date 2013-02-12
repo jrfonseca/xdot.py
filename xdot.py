@@ -372,9 +372,10 @@ class Element(CompoundShape):
 
 class Node(Element):
 
-    def __init__(self, x, y, w, h, shapes, url):
+    def __init__(self, id, x, y, w, h, shapes, url):
         Element.__init__(self, shapes)
 
+        self.id = id
         self.x = x
         self.y = y
 
@@ -400,6 +401,9 @@ class Node(Element):
             return Jump(self, self.x, self.y)
         return None
 
+    def __repr__(self):
+        return "<Node %s>" % self.id
+
 
 def square_distance(x1, y1, x2, y2):
     deltax = x2 - x1
@@ -423,6 +427,9 @@ class Edge(Element):
         if square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS:
             return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
         return None
+
+    def __repr__(self):
+        return "<Edge %s -> %s>" % (self.src, self.dst)
 
 
 class Graph(Shape):
@@ -1149,7 +1156,7 @@ class XDotParser(DotParser):
                 parser = XDotAttrParser(self, attrs[attr])
                 shapes.extend(parser.parse())
         url = attrs.get('URL', None)
-        node = Node(x, y, w, h, shapes, url)
+        node = Node(id, x, y, w, h, shapes, url)
         self.node_by_name[id] = node
         if shapes:
             self.nodes.append(node)
