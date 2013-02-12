@@ -1877,6 +1877,8 @@ class DotWindow(gtk.Window):
 
         vbox.pack_start(self.widget)
 
+        self.last_open_dir = "."
+
         self.set_focus(self.widget)
 
         # Add Find text search
@@ -1962,6 +1964,7 @@ class DotWindow(gtk.Window):
                                                  gtk.STOCK_OPEN,
                                                  gtk.RESPONSE_OK))
         chooser.set_default_response(gtk.RESPONSE_OK)
+        chooser.set_current_folder(self.last_open_dir)
         filter = gtk.FileFilter()
         filter.set_name("Graphviz dot files")
         filter.add_pattern("*.dot")
@@ -1972,6 +1975,7 @@ class DotWindow(gtk.Window):
         chooser.add_filter(filter)
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
+            self.last_open_dir = chooser.get_current_folder()
             chooser.destroy()
             self.open_file(filename)
         else:
