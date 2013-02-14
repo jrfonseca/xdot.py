@@ -1770,20 +1770,33 @@ class DotWidget(gtk.DrawingArea):
         return (time.time() < self.presstime + click_timeout
                 and math.hypot(deltax, deltay) < click_fuzz)
 
+    def on_click(self, element, event):
+        """Override this method in subclass to process
+        click events. Note that element can be None
+        (click on empty space)."""
+        return False
+
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
         self.drag_action = NullAction(self)
-        if event.button == 1 and self.is_click(event):
-            x, y = int(event.x), int(event.y)
-            url = self.get_url(x, y)
-            if url is not None:
-                self.emit('clicked', unicode(url.url), event)
-            else:
-                jump = self.get_jump(x, y)
-                if jump is not None:
-                    self.animate_to(jump.x, jump.y)
+        x, y = int(event.x), int(event.y)
+        if self.is_click(event):
+            el = self.get_element(x, y)
+            print "clicked element:", el
+            if self.on_click(el, event):
+                return True
 
-            return True
+            if event.button == 1:
+                url = self.get_url(x, y)
+                if url is not None:
+                    self.emit('clicked', unicode(url.url), event)
+                else:
+                    jump = self.get_jump(x, y)
+                    if jump is not None:
+                        self.animate_to(jump.x, jump.y)
+
+                return True
+
         if event.button == 1 or event.button == 2:
             return True
         return False
@@ -1863,7 +1876,7 @@ class DotWindow(gtk.Window):
 
     base_title = 'Dot Viewer'
 
-    def __init__(self):
+    def __init__(self, widget=None):
         gtk.Window.__init__(self)
 
         self.graph = Graph()
@@ -1875,7 +1888,7 @@ class DotWindow(gtk.Window):
         vbox = gtk.VBox()
         window.add(vbox)
 
-        self.widget = DotWidget()
+        self.widget = widget or DotWidget()
 
         # Create a UIManager instance
         uimanager = self.uimanager = gtk.UIManager()
