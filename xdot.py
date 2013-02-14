@@ -1670,6 +1670,12 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.r:
             self.reload()
             return True
+        if event.keyval == gtk.keysyms.f:
+            win = widget.get_toplevel()
+            find_toolitem = win.uimanager.get_widget('/ToolBar/Find')
+            textentry = find_toolitem.get_children()
+            win.set_focus(textentry[0])
+            return True
         if event.keyval == gtk.keysyms.q:
             gtk.main_quit()
             return True
