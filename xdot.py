@@ -135,6 +135,10 @@ class TextShape(Shape):
                 # XXX: Some broken pangocairo bindings show the error
                 # 'TypeError: font_options must be a cairo.FontOptions or None'
                 pass
+            except KeyError:
+                # cairo.FontOptions is not registered as a foreign struct in older PyGObject versions.
+                # https://git.gnome.org/browse/pygobject/commit/?id=b21f66d2a399b8c9a36a1758107b7bdff0ec8eaa
+                pass
 
             # set font
             font = Pango.FontDescription()
