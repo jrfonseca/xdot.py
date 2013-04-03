@@ -120,11 +120,11 @@ class TextShape(Shape):
         try:
             layout = self.layout
         except AttributeError:
-            context = Gdk.pango_context_get()
-            layout = Pango.Layout(context)
+            layout = PangoCairo.create_layout(cr)
 
             # set font options
             # see http://lists.freedesktop.org/archives/cairo/2007-February/009688.html
+            context = layout.get_context()
             fo = cairo.FontOptions()
             fo.set_antialias(cairo.ANTIALIAS_DEFAULT)
             fo.set_hint_style(cairo.HINT_STYLE_NONE)
