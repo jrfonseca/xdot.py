@@ -1554,6 +1554,10 @@ class DotWidget(gtk.DrawingArea):
             self.queue_draw()
 
     def zoom_image(self, zoom_ratio, center=False, pos=None):
+        # Constrain zoom ratio to a sane range to prevent numeric instability.
+        zoom_ratio = min(zoom_ratio, 1E4)
+        zoom_ratio = max(zoom_ratio, 1E-6)
+
         if center:
             self.x = self.graph.width/2
             self.y = self.graph.height/2
