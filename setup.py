@@ -4,6 +4,7 @@
 # Package Index, which can be easily done by doing:
 #
 #   python setup.py register
+#   python setup.py sdist upload
 #
 # See also:
 # - https://code.google.com/p/jrfonseca/issues/detail?id=19
