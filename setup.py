@@ -1,4 +1,15 @@
 #!/usr/bin/env python
+#
+# The purpose of this script is to enable uploading xdot.py to the Python
+# Package Index, which can be easily done by doing:
+#
+#   python setup.py register
+#
+# See also:
+# - https://code.google.com/p/jrfonseca/issues/detail?id=19
+# - http://docs.python.org/2/distutils/packageindex.html
+#
+
 from setuptools import setup
 
 setup(
