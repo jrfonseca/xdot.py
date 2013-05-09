@@ -20,8 +20,6 @@
 
 __author__ = "Jose Fonseca"
 
-__version__ = "0.4"
-
 
 import os
 import sys
@@ -1917,8 +1915,7 @@ def main():
     import optparse
 
     parser = optparse.OptionParser(
-        usage='\n\t%prog [file]',
-        version='%%prog %s' % __version__)
+        usage='\n\t%prog [file]')
     parser.add_option(
         '-f', '--filter',
         type='choice', choices=('dot', 'neato', 'twopi', 'circo', 'fdp'),
