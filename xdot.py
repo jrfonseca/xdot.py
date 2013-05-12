@@ -95,10 +95,6 @@ class Shape:
 
 class TextShape(Shape):
 
-    #fontmap = pangocairo.CairoFontMap()
-    #fontmap.set_resolution(72)
-    #context = fontmap.create_context()
-
     LEFT, CENTER, RIGHT = -1, 0, 1
 
     def __init__(self, pen, x, y, j, w, t):
@@ -395,7 +391,6 @@ class Node(Element):
     def get_url(self, x, y):
         if self.url is None:
             return None
-        #print (x, y), (self.x1, self.y1), "-", (self.x2, self.y2)
         if self.is_inside(x, y):
             return Url(self, self.url)
         return None
@@ -1505,7 +1500,6 @@ class DotWidget(gtk.DrawingArea):
             return True
 
     def set_xdotcode(self, xdotcode):
-        #print xdotcode
         parser = XDotParser(xdotcode)
         self.graph = parser.parse()
         self.zoom_image(self.zoom_ratio, center=True)
@@ -1696,8 +1690,6 @@ class DotWidget(gtk.DrawingArea):
 
     def begin_print(self, operation, context):
         operation.set_n_pages(1)
-        #operation.set_support_selection(True)
-        #operation.set_has_selection(True)
         return True
 
     def draw_page(self, operation, context, page_nr):
@@ -1871,7 +1863,6 @@ class DotWindow(gtk.Window):
 
         find_action = FindMenuToolAction("Find", None,
                                           "Find a node by name", None)
-        #find_action.set_tool_item_type(gtk.ToolItem)
         actiongroup.add_action(find_action)
 
         # Add the actiongroup to the uimanager
