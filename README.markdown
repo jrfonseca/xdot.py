@@ -1,20 +1,20 @@
-About **xdot.py**
+About _xdot.py_
 =================
 
-xdot.py is an interactive viewer for graphs written in [Graphviz](http://www.graphviz.org/)'s [dot language](http://www.graphviz.org/doc/info/lang.html).
+_xdot.py_ is an interactive viewer for graphs written in [Graphviz](http://www.graphviz.org/)'s [dot language](http://www.graphviz.org/doc/info/lang.html).
 
 It uses internally the graphviz's [xdot output format](http://www.graphviz.org/doc/info/output.html#d:xdot) as an intermediate format, and [PyGTK](http://www.pygtk.org/) and [Cairo](http://cairographics.org/) for rendering.
 
-xdot.py can be used either as a standalone application from command line, or as a library embedded in your python application.
+_xdot.py_ can be used either as a standalone application from command line, or as a library embedded in your python application.
 
 Status
 ======
 
-xdot.py script became much more popular than I ever anticipated, and there are several interested in improving it further. However, for several years now, xdot.py already meets my own needs, and unfortunately I don't have much time for maintain it myself.
+_xdot.py_ script became much more popular than I ever anticipated, and there are several interested in improving it further. However, for several years now, _xdot.py_ already meets my own needs, and unfortunately I don't have much time for maintain it myself.
 
-So I'm looking into transition xdot.py maitenance to others: either hand over the maintenance xdot.py to a community or indicate an official fork of xdot.py.
+So I'm looking into transition _xdot.py_ maitenance to others: either hand over the maintenance _xdot.py_ to a community or indicate an official fork of _xdot.py_.
 
-I encourage people interested in development of xdot.py to fork the (GitHub repository)[https://github.com/jrfonseca/xdot.py], and join the new (mailing list)[https://groups.google.com/d/forum/xdot-py].
+I encourage people interested in development of _xdot.py_ to fork the [GitHub repository](https://github.com/jrfonseca/xdot.py), and join the new [mailing list](https://groups.google.com/d/forum/xdot-py).
 
 Features
 ========
@@ -47,9 +47,9 @@ Changelog
 
  * **2009-09-20**: Automatically reloads open file when it changes (from Robert Meerman, issue #21)
 
- * **2009-09-20**: Add support for [ColorBrewer Color Schemes](http://colorbrewer.org/)(from to michael.hliao, issue #23).
+ * **2009-09-20**: Add support for [ColorBrewer Color Schemes](http://colorbrewer.org/) (from to michael.hliao, issue #23).
 
- * **2009-08-09**: Upload to [PyPi](http://pypi.python.org/pypi/xdot)(thanks to Marius Gedminas, issue #19)
+ * **2009-08-09**: Upload to [PyPi](http://pypi.python.org/pypi/xdot) (thanks to Marius Gedminas, issue #19)
 
  * **2009-05-24**: Reloads the file on the 'r' key (from peterbjorgensen).
 
@@ -152,7 +152,7 @@ If no input file is given then it will read the dot graph from the standard inpu
 Embedding
 ---------
 
-See included `example.py` script for an example of how to embedded xdot.py into another application.
+See included `example.py` script for an example of how to embedded _xdot.py_ into another application.
 
 [![Screenshot](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample.png)
 
