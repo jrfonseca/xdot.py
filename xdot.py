@@ -18,7 +18,7 @@
 
 '''Visualize dot graphs via the xdot format.'''
 
-__author__ = "Jose Fonseca"
+__author__ = "Jose Fonseca et al"
 
 
 import os
