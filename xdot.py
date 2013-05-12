@@ -45,8 +45,6 @@ import pangocairo
 # - http://mirageiv.berlios.de/
 # - http://comix.sourceforge.net/
 
-def filterlist(l, expr):
-    return map(lambda i: l[i], filter(lambda i: isinstance(l[i], expr), range(len(l))))
 
 class Pen:
     """Store pen attributes."""
@@ -90,6 +88,9 @@ class Shape:
             return self.highlight_pen
         else:
             return self.pen
+
+    def search_text(self, regexp):
+        return False
 
 
 class TextShape(Shape):
@@ -191,6 +192,9 @@ class TextShape(Shape):
             cr.move_to(x, self.y)
             cr.line_to(x+self.w, self.y)
             cr.stroke()
+
+    def search_text(self, regexp):
+        return regexp.search(self.t) is not None
 
 
 class ImageShape(Shape):
@@ -328,6 +332,12 @@ class CompoundShape(Shape):
     def draw(self, cr, highlight=False):
         for shape in self.shapes:
             shape.draw(cr, highlight=highlight)
+
+    def search_text(self, regexp):
+        for shape in self.shapes:
+            if shape.search_text(regexp):
+                return True
+        return False
 
 
 class Url(object):
@@ -1295,22 +1305,6 @@ class DragAction(object):
         self.startmousey = self.prevmousey = event.y
         self.start()
 
-        dot_widget = self.dot_widget
-        item = dot_widget.get_url(event.x, event.y)
-        if item is None:
-            item = dot_widget.get_jump(event.x, event.y)
-
-        if item is not None and isinstance(item.item, Node):
-            src = filterlist(item.item.shapes, TextShape)
-            print "# src", src[0].t
-            for edge in dot_widget.graph.edges:
-                if edge.src == item.item:
-                    dst = filterlist(edge.dst.shapes, TextShape)
-                    print "dst", dst[0].t
-                    #dstitem = dot_widget.get_jump(edge.dst.x, edge.dst.y);
-                    #dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
-                    #dot_widget.set_highlight(dstitem.highlight)
-
     def on_motion_notify(self, event):
         if event.is_hint:
             x, y, state = event.window.get_pointer()
@@ -1791,16 +1785,6 @@ class DotWidget(gtk.DrawingArea):
         self.animation = ZoomToAnimation(self, x, y)
         self.animation.start()
 
-    def graph2window(self, x, y):
-        rect = self.get_allocation()
-        x -= self.x
-        y -= self.y
-        x *= self.zoom_ratio
-        y *= self.zoom_ratio
-        x += 0.5 * rect.width
-        y += 0.5 * rect.height
-        return x, y
-
     def window2graph(self, x, y):
         rect = self.get_allocation()
         x -= 0.5*rect.width
@@ -1919,10 +1903,9 @@ class DotWindow(gtk.Window):
     def find_text(self, entry_text):
         found_items = []
         dot_widget = self.widget
+        regexp = re.compile(entry_text)
         for node in dot_widget.graph.nodes:
-            text = filterlist(node.shapes, TextShape)
-            if re.search (entry_text, text[0].t):
-                #print "found:", entry_text ,"at", node, node.x, node.y
+            if node.search_text(regexp):
                 found_items.append(node)
         return found_items
 
@@ -1947,17 +1930,6 @@ class DotWindow(gtk.Window):
         dot_widget.set_highlight(found_items)
         if(len(found_items) == 1):
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
-
-    def update(self, filename):
-        if not hasattr(self, "last_mtime"):
-            self.last_mtime = None
-
-        current_mtime = os.stat(filename).st_mtime
-        if current_mtime != self.last_mtime:
-            self.last_mtime = current_mtime
-            self.open_file(filename)
-
-        return True
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
