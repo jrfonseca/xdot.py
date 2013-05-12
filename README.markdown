@@ -79,9 +79,9 @@ See also the [googlecode issue tracker](https://code.google.com/p/jrfonseca/issu
 Screenshots
 ===========
 
-[![Screenshot 1](http://wiki.jrfonseca.googlecode.com/git/xdot-profile1_small.png)](http://wiki.jrfonseca.googlecode.com/git/xdot-profile1.png)
-[![Screenshot 2](http://wiki.jrfonseca.googlecode.com/git/xdot-profile2_small.png)](http://wiki.jrfonseca.googlecode.com/git/xdot-profile2.png)
-[![Screenshot 3](http://wiki.jrfonseca.googlecode.com/git/xdot-cfg_small.png)](http://wiki.jrfonseca.googlecode.com/git/xdot-cfg.png)
+[![Profile 1 Screenshot](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-profile1_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-profile1.png)
+[![Profile 2 Screenshot](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-profile2_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-profile2.png)
+[![Control Flow Graph](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-cfg_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-cfg.png)
 
 Requirements
 ============
@@ -148,7 +148,7 @@ Embedding
 
 See included `example.py` script for an example of how to embedded xdot.py into another application.
 
-[![Screenshot](http://wiki.jrfonseca.googlecode.com/git/xdot-sample_small.png)](http://wiki.jrfonseca.googlecode.com/git/xdot-sample.png)
+[![Screenshot](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample.png)
 
 Download
 ========
