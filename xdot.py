@@ -1475,7 +1475,7 @@ class DotWidget(gtk.DrawingArea):
             return False
         try:
             self.set_xdotcode(xdotcode)
-        except ParseError, ex:
+        except ParseError as ex:
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=str(ex),
                                        buttons=gtk.BUTTONS_OK)
@@ -1880,7 +1880,7 @@ class DotWindow(gtk.Window):
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
-        except IOError, ex:
+        except IOError as ex:
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
