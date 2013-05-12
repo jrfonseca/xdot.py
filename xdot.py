@@ -28,6 +28,7 @@ import math
 import colorsys
 import time
 import re
+import optparse
 
 import gobject
 import gtk
@@ -2017,11 +2018,32 @@ class DotWindow(gtk.Window):
         self.widget.reload()
 
 
-def main():
-    import optparse
+class OptionParser(optparse.OptionParser):
 
-    parser = optparse.OptionParser(
-        usage='\n\t%prog [file]')
+    def format_epilog(self, formatter):
+        # Prevent stripping the newlines in epilog message
+        # http://stackoverflow.com/questions/1857346/python-optparse-how-to-include-additional-info-in-usage-output
+        return self.epilog
+
+
+def main():
+
+    parser = OptionParser(
+        usage='\n\t%prog [file]',
+        epilog='''
+Shortcuts:
+  Up, Down, Left, Right     scroll
+  PageUp, +, =              zoom in
+  PageDown, -               zoom out
+  R                         reload dot file
+  F                         find
+  Q                         quit
+  P                         print
+  Escape                    halt animation
+  Ctrl-drag                 zoom in/out
+  Shift-drag                zooms an area
+'''
+    )
     parser.add_option(
         '-f', '--filter',
         type='choice', choices=('dot', 'neato', 'twopi', 'circo', 'fdp'),
