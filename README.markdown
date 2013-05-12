@@ -26,49 +26,6 @@ Features
  * Animated jumping between nodes.
  * Highlights node/edge under mouse.
 
-Changelog
-=========
-
- * **2013-05-12**: Text based node search (by Salva and ludw1g.m3i3r, issue 68)
-
- * **2012-11-24**: Printing support (by ludw1g.m3i3r, issue 74)
-
- * **2011-09-01**: Fix forward slash escaping (issue 61)
-
- * **2011-02-13**: Show dotted lines in xdot (by djs52uk, issue 50)
-
- * **2010-12-12**: Support images (thanks to Alberto Rodríguez)
-
- * **2010-01-32**: Add Quit key binding (from sk, issue #30)
-
- * **2009-09-30**: Add a reload button (fixes issue #22)
-
- * **2009-09-30**: Properly handle motion-notify-event (from lodatom, issue #24)
-
- * **2009-09-20**: Automatically reloads open file when it changes (from Robert Meerman, issue #21)
-
- * **2009-09-20**: Add support for [ColorBrewer Color Schemes](http://colorbrewer.org/) (from to michael.hliao, issue #23).
-
- * **2009-08-09**: Upload to [PyPi](http://pypi.python.org/pypi/xdot) (thanks to Marius Gedminas, issue #19)
-
- * **2009-05-24**: Reloads the file on the 'r' key (from peterbjorgensen).
-
- * **2009-04-09**: Render subgraphs correctly.
-
- * **2009-03-04**: Support filled bezier shapes.
-
- * **2009-01-29**: Check for unicode input; check subprocess returncode (from Jaap Karssenberg).
-
- * **2008-10-27**: Replace pydot and pyparsing by a much faster hand written lexer and parser (issue #9).
-
- * **2008-09-02**: Make mouse wheel zoom around the mouse cursor rather than center of window (from Marius Gedminas).
-
- * **2008-09-02**: Handle polylines. Handle ports in node names.
-
- * **2008-07-27**: Allow to specify the graphviz filter to use.
-
- * **2008-07-13**: Commit several enhancements done by [Marius Gedminas](http://mg.pov.lt/blog/europython2008-sprints-day-2.html), such as, animated jumping between nodes, highlighted node/edge under mouse, and support to more xdot language features.
-
 Known Issues
 ============
 
