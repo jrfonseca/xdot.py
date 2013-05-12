@@ -1615,9 +1615,8 @@ class DotWidget(gtk.DrawingArea):
         width = abs(x1 - x2)
         height = abs(y1 - y2)
         if width == 0 and height == 0:
-            self.zoom_ratio /= 2
+            self.zoom_ratio *= self.ZOOM_INCREMENT
         else:
-            # TODO: handle case of width or hight == 0
             self.zoom_ratio = min(
                 float(rect.width)/float(width),
                 float(rect.height)/float(height)
