@@ -10,9 +10,11 @@ xdot.py can be used either as a standalone application from command line, or as 
 Status
 ======
 
-xdot.py script became much more popular than I ever anticipated, and it there is potential for further enhancements.  However xdot.py already meets my own needs as it is now, and unfortunately I don't have much time for maintain it myself.
+xdot.py script became much more popular than I ever anticipated, and there are several interested in improving it further. However, for several years now, xdot.py already meets my own needs, and unfortunately I don't have much time for maintain it myself.
 
-If this version of xdot.py does not meet your needs then take a look at the [outstanding issues](https://code.google.com/p/jrfonseca/issues/list?q=xdot) or the comments below, for patches and links for other forks.  xdot.py is small and self contained, so feel free to include it in your own projects.
+So I'm looking into transition xdot.py maitenance to others: either hand over the maintenance xdot.py to a community or indicate an official fork of xdot.py.
+
+I encourage people interested in development of xdot.py to fork the (GitHub repository)[https://github.com/jrfonseca/xdot.py], and join the new (mailing list)[https://groups.google.com/d/forum/xdot-py].
 
 Features
 ========
@@ -74,7 +76,11 @@ Known Issues
 
  * Text doesn't scale properly to large sizes if font hinting is enabled. I haven't find a reliable way to disable font hinting during rendering yet.
 
-See also the [googlecode issue tracker](https://code.google.com/p/jrfonseca/issues/list?q=xdot).
+See also:
+
+  * [github issue tracker](https://github.com/jrfonseca/xdot.py/issues)
+
+  * [googlecode issue tracker](https://code.google.com/p/jrfonseca/issues/list?q=xdot).
 
 Screenshots
 ===========
@@ -86,7 +92,7 @@ Screenshots
 Requirements
 ============
 
- * [Python](http://www.python.org/download/) (2.4 or greater)
+ * [Python](http://www.python.org/download/) (2.6 or 2.7)
 
  * [PyGTK](http://www.pygtk.org/downloads.html) (2.10 or greater)
 
