@@ -1782,7 +1782,6 @@ class DotWidget(gtk.DrawingArea):
         x, y = int(event.x), int(event.y)
         if self.is_click(event):
             el = self.get_element(x, y)
-            print "clicked element:", el
             if self.on_click(el, event):
                 return True
 
