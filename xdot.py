@@ -1146,6 +1146,8 @@ class DotParser(Parser):
 
 class XDotParser(DotParser):
 
+    XDOTVERSION = '1.6'
+
     def __init__(self, xdotcode):
         lexer = DotLexer(buf = xdotcode)
         DotParser.__init__(self, lexer)
@@ -1158,26 +1160,34 @@ class XDotParser(DotParser):
 
     def handle_graph(self, attrs):
         if self.top_graph:
+            # Check xdot version
+            try:
+                xdotversion = attrs['xdotversion']
+            except KeyError:
+                pass
+            else:
+                if float(xdotversion) > float(self.XDOTVERSION):
+                    sys.stderr.write('warning: xdot version %s, but supported is %s\n' % (xdotversion, self.XDOTVERSION))
+
+            # Parse bounding box
             try:
                 bb = attrs['bb']
             except KeyError:
                 return
 
-            if not bb:
-                return
+            if bb:
+                xmin, ymin, xmax, ymax = map(float, bb.split(","))
 
-            xmin, ymin, xmax, ymax = map(float, bb.split(","))
+                self.xoffset = -xmin
+                self.yoffset = -ymax
+                self.xscale = 1.0
+                self.yscale = -1.0
+                # FIXME: scale from points to pixels
 
-            self.xoffset = -xmin
-            self.yoffset = -ymax
-            self.xscale = 1.0
-            self.yscale = -1.0
-            # FIXME: scale from points to pixels
+                self.width  = max(xmax - xmin, 1)
+                self.height = max(ymax - ymin, 1)
 
-            self.width  = max(xmax - xmin, 1)
-            self.height = max(ymax - ymin, 1)
-
-            self.top_graph = False
+                self.top_graph = False
         
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
             if attr in attrs:
