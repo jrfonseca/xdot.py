@@ -504,6 +504,14 @@ class Graph(Shape):
         return None
 
 
+BOLD = 1
+ITALIC = 2
+UNDERLINE = 4
+SUPERSCRIPT = 8
+SUBSCRIPT = 16
+STRIKE_THROUGH = 32
+
+
 class XDotAttrParser:
     """Parser for xdot drawing attributes.
     See also:
@@ -609,7 +617,7 @@ class XDotAttrParser:
             a = 1.0
             return r, g, b, a
                 
-        sys.stderr.write("unknown color '%s'\n" % c)
+        sys.stderr.write("warning: unknown color '%s'\n" % c)
         return None
 
     def parse(self):
@@ -644,6 +652,9 @@ class XDotAttrParser:
                 w = s.read_float()
                 t = s.read_text()
                 self.handle_text(x, y, j, w, t)
+            elif op == "t":
+                f = s.read_int()
+                self.handle_font_characteristics(f)
             elif op == "E":
                 x0, y0 = s.read_point()
                 w = s.read_float()
@@ -676,8 +687,8 @@ class XDotAttrParser:
                 path = s.read_text()
                 self.handle_image(x0, y0, w, h, path)
             else:
-                sys.stderr.write("unknown xdot opcode '%s'\n" % op)
-                break
+                sys.stderr.write("error: unknown xdot opcode '%s'\n" % op)
+                sys.exit(1)
 
         return self.shapes
     
@@ -704,6 +715,11 @@ class XDotAttrParser:
     def handle_font(self, size, name):
         self.pen.fontsize = size
         self.pen.fontname = name
+
+    def handle_font_characteristics(self, flags):
+        # TODO
+        if flags != 0:
+            sys.stderr.write("warning: font characteristics not supported yet\n" % op)
 
     def handle_text(self, x, y, j, w, t):
         self.shapes.append(TextShape(self.pen, x, y, j, w, t))
