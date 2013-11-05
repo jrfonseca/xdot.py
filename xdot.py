@@ -529,19 +529,19 @@ class XDotAttrParser:
             self.pos += 1
         return res
 
-    def read_number(self):
+    def read_int(self):
         return int(self.read_code())
 
     def read_float(self):
         return float(self.read_code())
 
     def read_point(self):
-        x = self.read_number()
-        y = self.read_number()
+        x = self.read_float()
+        y = self.read_float()
         return self.transform(x, y)
 
     def read_text(self):
-        num = self.read_number()
+        num = self.read_int()
         pos = self.buf.find("-", self.pos) + 1
         self.pos = pos + num
         res = self.buf[pos:self.pos]
@@ -550,7 +550,7 @@ class XDotAttrParser:
         return res
 
     def read_polygon(self):
-        n = self.read_number()
+        n = self.read_int()
         p = []
         for i in range(n):
             x, y = self.read_point()
@@ -637,19 +637,19 @@ class XDotAttrParser:
                 self.handle_font(size, name)
             elif op == "T":
                 x, y = s.read_point()
-                j = s.read_number()
-                w = s.read_number()
+                j = s.read_int()
+                w = s.read_float()
                 t = s.read_text()
                 self.handle_text(x, y, j, w, t)
             elif op == "E":
                 x0, y0 = s.read_point()
-                w = s.read_number()
-                h = s.read_number()
+                w = s.read_float()
+                h = s.read_float()
                 self.handle_ellipse(x0, y0, w, h, filled=True)
             elif op == "e":
                 x0, y0 = s.read_point()
-                w = s.read_number()
-                h = s.read_number()
+                w = s.read_float()
+                h = s.read_float()
                 self.handle_ellipse(x0, y0, w, h, filled=False)
             elif op == "L":
                 points = self.read_polygon()
@@ -668,8 +668,8 @@ class XDotAttrParser:
                 self.handle_polygon(points, filled=False)
             elif op == "I":
                 x0, y0 = s.read_point()
-                w = s.read_number()
-                h = s.read_number()
+                w = s.read_float()
+                h = s.read_float()
                 path = s.read_text()
                 self.handle_image(x0, y0, w, h, path)
             else:
