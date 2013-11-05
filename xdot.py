@@ -577,6 +577,9 @@ class XDotAttrParser:
             r, g, b = colorsys.hsv_to_rgb(h, s, v)
             a = 1.0
             return r, g, b, a
+        elif c1 == "[":
+            sys.stderr.write('warning: color gradients not supported yet\n')
+            return None
         else:
             return self.lookup_color(c)
 
