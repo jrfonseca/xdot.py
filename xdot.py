@@ -2015,6 +2015,8 @@ class DotWindow(Gtk.Window):
         # to display a file menu
         self.dotwidget.connect("button-press-event", self.on_file_menu)
 
+        self.connect('key-press-event', self.on_key_press_event)
+
         self.last_open_dir = "."
 
         self.set_focus(self.dotwidget)
@@ -2145,12 +2147,12 @@ class DotWindow(Gtk.Window):
         self.open_file_idx = min(len(self.open_files)-1, self.open_file_idx)
         self.open_file(self.open_files[self.open_file_idx])
 
-    def on_go_forward(self, action):
+    def on_go_forward(self, action = None):
         """Display the next file"""
         self.open_file_idx = min(self.open_file_idx + 1, len(self.open_files) - 1)
         self.open_file(self.open_files[self.open_file_idx])
 
-    def on_go_back(self, action):
+    def on_go_back(self, action = None):
         """Display the previous file"""
         self.open_file_idx = max(0, self.open_file_idx - 1)
         self.open_file(self.open_files[self.open_file_idx])
@@ -2195,6 +2197,8 @@ Shortcuts:
   Up, Down, Left, Right     scroll
   PageUp, +, =              zoom in
   PageDown, -               zoom out
+  [                         previous open file
+  ]                         next open file
   R                         reload dot file
   F                         find
   Q                         quit
