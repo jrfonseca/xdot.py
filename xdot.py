@@ -2011,6 +2011,10 @@ class DotWindow(Gtk.Window):
             self.open_files.append(os.path.abspath(filename))
         self.open_file_idx = 0
 
+        # Connect the Button click event of the drawing menu, in order
+        # to display a file menu
+        self.dotwidget.connect("button-press-event", self.on_file_menu)
+
         self.last_open_dir = "."
 
         self.set_focus(self.dotwidget)
@@ -2151,6 +2155,28 @@ class DotWindow(Gtk.Window):
         self.open_file_idx = max(0, self.open_file_idx - 1)
         self.open_file(self.open_files[self.open_file_idx])
 
+    def on_file_menu(self, widget, event):
+        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
+            menu = Gtk.Menu()
+            for filename in self.open_files:
+                label = os.path.basename(filename)
+                item  = Gtk.MenuItem()
+                item.set_label(label)
+                item.connect("activate", lambda _, f: self.open_file(f), filename)
+                menu.append(item)
+                menu.show_all()
+            self.menu = menu
+            menu.popup(None, None, None, None,
+                       event.button, event.time)
+            return True
+
+    def on_key_press_event(self, widget, event):
+        if event.keyval == Gdk.KEY_bracketleft:
+            self.on_go_back()
+            return True
+        if event.keyval == Gdk.KEY_bracketright:
+            self.on_go_forward()
+            return True
 
 class OptionParser(optparse.OptionParser):
 
