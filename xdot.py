@@ -1929,7 +1929,10 @@ class DotWindow(Gtk.Window):
     ui = '''
     <ui>
         <toolbar name="ToolBar">
+            <toolitem action="NextFile"/>
+            <toolitem action="PrevFile"/>
             <toolitem action="Open"/>
+            <toolitem action="CloseFile"/>
             <toolitem action="Reload"/>
             <toolitem action="Print"/>
             <separator/>
@@ -1945,7 +1948,7 @@ class DotWindow(Gtk.Window):
 
     base_title = 'Dot Viewer'
 
-    def __init__(self, widget=None):
+    def __init__(self, command_line_files, widget=None):
         Gtk.Window.__init__(self)
 
         self.graph = Graph()
@@ -1973,12 +1976,15 @@ class DotWindow(Gtk.Window):
         # Create actions
         actiongroup.add_actions((
             ('Open', Gtk.STOCK_OPEN, None, None, None, self.on_open),
+            ('CloseFile', Gtk.STOCK_CLOSE, None, None, "Close File", self.on_close_file),
             ('Reload', Gtk.STOCK_REFRESH, None, None, None, self.on_reload),
             ('Print', Gtk.STOCK_PRINT, None, None, "Prints the currently visible part of the graph", self.dotwidget.on_print),
             ('ZoomIn', Gtk.STOCK_ZOOM_IN, None, None, None, self.dotwidget.on_zoom_in),
             ('ZoomOut', Gtk.STOCK_ZOOM_OUT, None, None, None, self.dotwidget.on_zoom_out),
             ('ZoomFit', Gtk.STOCK_ZOOM_FIT, None, None, None, self.dotwidget.on_zoom_fit),
             ('Zoom100', Gtk.STOCK_ZOOM_100, None, None, None, self.dotwidget.on_zoom_100),
+            ('NextFile', Gtk.STOCK_GO_BACK, None, None, None, self.on_go_back),
+            ('PrevFile', Gtk.STOCK_GO_FORWARD, None, None, None, self.on_go_forward),
         ))
 
         find_action = FindMenuToolAction("Find", None,
@@ -1996,6 +2002,14 @@ class DotWindow(Gtk.Window):
         vbox.pack_start(toolbar, False, False, 0)
 
         vbox.pack_start(self.dotwidget, True, True, 0)
+
+        # Check whether the files from the command line exist
+        self.open_files = []
+        for filename in command_line_files:
+            if not os.path.exists(filename):
+                sys.stderr.write('Could not open file, ignore it: %st\n' % filename)
+            self.open_files.append(os.path.abspath(filename))
+        self.open_file_idx = 0
 
         self.last_open_dir = "."
 
@@ -2065,6 +2079,14 @@ class DotWindow(Gtk.Window):
 
     def open_file(self, filename):
         try:
+            filename = os.path.abspath(filename)
+            if filename in self.open_files:
+                self.open_file_idx = self.open_files.index(filename)
+            else:
+                idx = self.open_file_idx
+                self.open_files = self.open_files[:idx] + [filename] \
+                                  + self.open_files[idx:]
+
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
@@ -2104,6 +2126,31 @@ class DotWindow(Gtk.Window):
     def on_reload(self, action):
         self.dotwidget.reload()
 
+    def on_close_file(self, action):
+        """Close the currently displayed file"""
+        if len(self.open_files) == 1:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format="Cannot close last open file",
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title(self.base_title)
+            dlg.run()
+            dlg.destroy()
+            return
+
+        del self.open_files[self.open_file_idx]
+        self.open_file_idx = min(len(self.open_files)-1, self.open_file_idx)
+        self.open_file(self.open_files[self.open_file_idx])
+
+    def on_go_forward(self, action):
+        """Display the next file"""
+        self.open_file_idx = min(self.open_file_idx + 1, len(self.open_files) - 1)
+        self.open_file(self.open_files[self.open_file_idx])
+
+    def on_go_back(self, action):
+        """Display the previous file"""
+        self.open_file_idx = max(0, self.open_file_idx - 1)
+        self.open_file(self.open_files[self.open_file_idx])
+
 
 class OptionParser(optparse.OptionParser):
 
@@ -2142,10 +2189,10 @@ Shortcuts:
         help='assume input is already filtered into xdot format (use e.g. dot -Txdot)')
 
     (options, args) = parser.parse_args(sys.argv[1:])
-    if len(args) > 1:
+    if len(args) == 0:
         parser.error('incorrect number of arguments')
 
-    win = DotWindow()
+    win = DotWindow(args)
     win.connect('delete-event', Gtk.main_quit)
     win.set_filter(options.filter)
     if len(args) >= 1:
