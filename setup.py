@@ -18,7 +18,7 @@ setup(
     version='0.6',
     author='Jose Fonseca',
     author_email='jose.r.fonseca@gmail.com',
-    url='http://code.google.com/p/jrfonseca/wiki/XDot',
+    url='https://github.com/jrfonseca/xdot.py',
     description="Interactive viewer for Graphviz dot files",
     long_description="""
         xdot.py is an interactive viewer for graphs written in Graphviz's dot
