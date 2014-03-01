@@ -15,7 +15,7 @@ from setuptools import setup
 
 setup(
     name='xdot',
-    version='0.5',
+    version='0.6',
     author='Jose Fonseca',
     author_email='jose.r.fonseca@gmail.com',
     url='http://code.google.com/p/jrfonseca/wiki/XDot',
