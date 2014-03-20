@@ -1514,16 +1514,22 @@ class DotWidget(gtk.DrawingArea):
     def run_filter(self, dotcode):
         if not self.filter:
             return dotcode
-        p = subprocess.Popen(
-            [self.filter, '-Txdot'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=False,
-            universal_newlines=True
-        )
-        xdotcode, error = p.communicate(dotcode)
-        sys.stderr.write(error)
+        try:
+            p = subprocess.Popen(
+                [self.filter, '-Txdot'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=False,
+                universal_newlines=True
+            )
+        except OSError as exc:
+            error = '%s: %s' % (self.filter, exc.strerror)
+            p = subprocess.CalledProcessError(exc.errno, self.filter, exc.strerror)
+        else:
+            xdotcode, error = p.communicate(dotcode)
+        error = error.rstrip()
+        sys.stderr.write(error + '\n')
         if p.returncode != 0:
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=error,
