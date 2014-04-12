@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #
 # Copyright 2008 Jose Fonseca
 #
@@ -522,7 +522,7 @@ class XDotAttrParser:
         self.parser = parser
         self.buf = buf
         self.pos = 0
-        
+
         self.pen = Pen()
         self.shapes = []
 
@@ -691,7 +691,7 @@ class XDotAttrParser:
                 sys.exit(1)
 
         return self.shapes
-    
+
     def transform(self, x, y):
         return self.parser.transform(x, y)
 
@@ -763,7 +763,7 @@ class ParseError(Exception):
 
     def __str__(self):
         return ':'.join([str(part) for part in (self.filename, self.line, self.col, self.msg) if part != None])
-        
+
 
 class Scanner:
     """Stateless scanner."""
@@ -902,9 +902,9 @@ class Parser:
     def match(self, type):
         if self.lookahead.type != type:
             raise ParseError(
-                msg = 'unexpected token %r' % self.lookahead.text, 
-                filename = self.lexer.filename, 
-                line = self.lookahead.line, 
+                msg = 'unexpected token %r' % self.lookahead.text,
+                filename = self.lexer.filename,
+                line = self.lookahead.line,
                 col = self.lookahead.col)
 
     def skip(self, type):
@@ -1007,7 +1007,7 @@ class DotLexer(Lexer):
             text = text.replace('\\\r\n', '')
             text = text.replace('\\\r', '')
             text = text.replace('\\\n', '')
-            
+
             # quotes
             text = text.replace('\\"', '"')
 
@@ -1151,7 +1151,7 @@ class XDotParser(DotParser):
     def __init__(self, xdotcode):
         lexer = DotLexer(buf = xdotcode)
         DotParser.__init__(self, lexer)
-        
+
         self.nodes = []
         self.edges = []
         self.shapes = []
@@ -1219,7 +1219,7 @@ class XDotParser(DotParser):
             pos = attrs['pos']
         except KeyError:
             return
-        
+
         points = self.parse_edge_pos(pos)
         shapes = []
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
@@ -1903,6 +1903,10 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
             <separator/>
+            <toolitem action="Previous"/>
+            <toolitem action="Next"/>
+            <toolitem action="Quit"/>
+            <separator/>
             <toolitem name="Find" action="Find"/>
         </toolbar>
     </ui>
@@ -1924,6 +1928,8 @@ class DotWindow(gtk.Window):
 
         self.widget = widget or DotWidget()
 
+        self.connect('key-press-event', self.on_window_key_press_event)
+
         # Create a UIManager instance
         uimanager = self.uimanager = gtk.UIManager()
 
@@ -1944,6 +1950,9 @@ class DotWindow(gtk.Window):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+            ('Previous', gtk.STOCK_GO_BACK, None, None, None, self.on_prev),
+            ('Next', gtk.STOCK_GO_FORWARD, None, None, None, self.on_next),
+            ('Quit', gtk.STOCK_QUIT, None, None, None, self.on_quit),
         ))
 
         find_action = FindMenuToolAction("Find", None,
@@ -1959,6 +1968,14 @@ class DotWindow(gtk.Window):
         # Create a Toolbar
         toolbar = uimanager.get_widget('/ToolBar')
         vbox.pack_start(toolbar, False)
+
+        # Create a text entry box for the filename
+        file_entry = gtk.Entry()
+        self.file_entry = file_entry
+        file_entry.set_has_frame(True)
+        file_entry.set_text('')
+        file_entry.connect("activate", self.on_text_open)
+        vbox.pack_start(file_entry, False)
 
         vbox.pack_start(self.widget)
 
@@ -2021,7 +2038,7 @@ class DotWindow(gtk.Window):
         if self.widget.set_xdotcode(xdotcode):
             self.update_title(filename)
             self.widget.zoom_to_fit()
-        
+
     def update_title(self, filename=None):
         if filename is None:
             self.set_title(self.base_title)
@@ -2030,10 +2047,35 @@ class DotWindow(gtk.Window):
 
     def open_file(self, filename):
         try:
+            self.file_entry.set_text(filename)
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError as ex:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format=str(ex),
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title(self.base_title)
+            dlg.run()
+            dlg.destroy()
+
+    def build_file_list(self, filepath):
+        try:
+            filepath = os.path.abspath(filepath)
+            if os.path.isdir(filepath):
+                directory = filepath
+            else:
+                directory = os.path.dirname(filepath)
+            sori = lambda x: (int(x) if x.isdigit() else x) # returns s(tring) or i(nteger)
+            natkey = lambda x: [sori(y) for y in re.split(r'(\d+)', x)]
+            self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')],
+                                        key=natkey)
+            if os.path.isdir(filepath):
+                self.file_index = 0
+            else:
+                self.file_index = self.files_in_dir.index(filepath)
+            self.file_dir   = directory
+        except Exception as ex:
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
@@ -2058,16 +2100,77 @@ class DotWindow(gtk.Window):
         filter.set_name("All files")
         filter.add_pattern("*")
         chooser.add_filter(filter)
+        try:
+            chooser.set_current_folder(self.file_dir)
+        except AttributeError:
+            pass # Will happen on the first call, because self.file_dir would not exist
+        except:
+            raise
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
             self.last_open_dir = chooser.get_current_folder()
             chooser.destroy()
+            self.build_file_list(filename)
             self.open_file(filename)
         else:
             chooser.destroy()
 
+    def on_text_open(self, action):
+        fileentry = self.file_entry.get_text()
+        if os.path.exists(fileentry):
+            fileentry = os.path.abspath(fileentry)
+            self.file_entry.set_text(fileentry)
+            self.file_entry.set_position(1000) # some large number to push the cursor to the end
+
+        if os.path.isfile(fileentry):
+            self.build_file_list(fileentry)
+            self.open_file(fileentry)
+            self.child_focus(gtk.DIR_TAB_FORWARD)
+        elif os.path.isdir(fileentry):
+            self.build_file_list(fileentry)
+            if self.files_in_dir:              # found .dot files
+                self.open_file(self.files_in_dir[0])
+                self.child_focus(gtk.DIR_TAB_FORWARD)
+
     def on_reload(self, action):
         self.widget.reload()
+
+    def on_quit(self, action):
+        gtk.main_quit()
+
+    def on_next(self, action):
+        try:
+            self.file_index += 1
+            if self.file_index >= len(self.files_in_dir):
+                self.file_index = 0
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_prev(self, action):
+        try:
+            self.file_index -= 1
+            if self.file_index < 0:
+                self.file_index = len(self.files_in_dir)-1
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_window_key_press_event(self, widget, event):
+        if self.file_entry.is_focus():
+            return False
+        if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
+            self.on_prev(None)
+            return True
+        if event.keyval == gtk.keysyms.n or event.keyval == gtk.keysyms.k:
+            self.on_next(None)
+            return True
+        if event.keyval == gtk.keysyms.o:
+            self.on_open(None)
+            return True
+        return False
 
 
 class OptionParser(optparse.OptionParser):
@@ -2120,30 +2223,31 @@ Shortcuts:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
         else:
+            win.build_file_list(args[0])
             win.open_file(args[0])
     gtk.main()
 
 
 # Apache-Style Software License for ColorBrewer software and ColorBrewer Color
 # Schemes, Version 1.1
-# 
+#
 # Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State
 # University. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions as source code must retain the above copyright notice,
-#    this list of conditions and the following disclaimer.  
+#    this list of conditions and the following disclaimer.
 #
 #    2. The end-user documentation included with the redistribution, if any,
 #    must include the following acknowledgment:
-# 
+#
 #       This product includes color specifications and designs developed by
 #       Cynthia Brewer (http://colorbrewer.org/).
-# 
+#
 #    Alternately, this acknowledgment may appear in the software itself, if and
-#    wherever such third-party acknowledgments normally appear.  
+#    wherever such third-party acknowledgments normally appear.
 #
 #    3. The name "ColorBrewer" must not be used to endorse or promote products
 #    derived from this software without prior written permission. For written
@@ -2151,8 +2255,8 @@ Shortcuts:
 #
 #    4. Products derived from this software may not be called "ColorBrewer",
 #    nor may "ColorBrewer" appear in their name, without prior written
-#    permission of Cynthia Brewer. 
-# 
+#    permission of Cynthia Brewer.
+#
 # THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES,
 # INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
 # FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL CYNTHIA
@@ -2162,7 +2266,7 @@ Shortcuts:
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 brewer_colors = {
     'accent3': [(127, 201, 127), (190, 174, 212), (253, 192, 134)],
     'accent4': [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153)],
