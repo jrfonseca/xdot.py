@@ -103,6 +103,8 @@ Command Line
       Escape                    halt animation
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
+      F2						prev highlighted item
+      F3						next highlighted item
 
 If no input file is given then it will read the dot graph from the standard input.
 

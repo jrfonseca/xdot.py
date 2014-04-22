@@ -1742,12 +1742,27 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.p:
             self.on_print()
             return True
+        if event.keyval == gtk.keysyms.F2:
+            # drnol: jump to next highlighted item 
+            self.jump_to_prev_highlight() 
+            return True
         if event.keyval == gtk.keysyms.F3:
             # drnol: jump to next highlighted item 
             self.jump_to_next_highlight() 
             return True
         return False
 
+    # drnol: jump to prev highlighted item
+    def jump_to_prev_highlight(self):        
+        if self.highlight:
+            if len(self.highlight) > 0:
+                if self.focused == None:
+                    self.focused = 0
+                else:
+                    self.focused = (self.focused+1) % len(self.highlight)
+                item = self.highlight[len(self.highlight)-self.focused-1]
+                self.animate_to(item.x, item.y)
+                
     # drnol: jump to next highlighted item
     def jump_to_next_highlight(self):        
         if self.highlight:
@@ -2111,6 +2126,8 @@ Shortcuts:
   Escape                    halt animation
   Ctrl-drag                 zoom in/out
   Shift-drag                zooms an area
+  F2                        next highlighted item
+  F3                        next highlighted item
 '''
     )
     parser.add_option(
