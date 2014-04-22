@@ -458,7 +458,23 @@ class Graph(Shape):
         self.shapes = shapes
         self.nodes = nodes
         self.edges = edges
-
+        self.build_edge_map() # drnol: build edge lookup map 
+        
+    # drnol: build edge lookup map  
+    def build_edge_map(self):
+        self.edgemap = {}        
+        for edge in self.edges:
+            # add src
+            if self.edgemap.has_key(edge.src):
+                self.edgemap[edge.src].append(edge) 
+            else:
+                self.edgemap[edge.src] = [edge]
+            # add dst           
+            if self.edgemap.has_key(edge.dst):
+                self.edgemap[edge.dst].append(edge) 
+            else:
+                self.edgemap[edge.dst] = [edge]        
+        
     def get_size(self):
         return self.width, self.height
 
@@ -491,7 +507,7 @@ class Graph(Shape):
             if url is not None:
                 return url
         return None
-
+    
     def get_jump(self, x, y):
         for edge in self.edges:
             jump = edge.get_jump(x, y)
@@ -1479,7 +1495,9 @@ class DotWidget(gtk.DrawingArea):
     }
 
     filter = 'dot'
-    focused = None 
+    focused_index = None
+    selected_node = None
+    selected_edge = None
     
     def __init__(self):
         gtk.DrawingArea.__init__(self)
@@ -1625,6 +1643,9 @@ class DotWidget(gtk.DrawingArea):
 
     def set_highlight(self, items):
         if self.highlight != items:
+            self.focused_index = None # drnol: reset node focus
+            self.selected_node = None # drnol: reset node selection
+            self.selected_edge_index = None # drnol: reset edge selection 
             self.highlight = items
             self.queue_draw()
 
@@ -1743,12 +1764,24 @@ class DotWidget(gtk.DrawingArea):
             self.on_print()
             return True
         if event.keyval == gtk.keysyms.F2:
-            # drnol: jump to next highlighted item 
+            # drnol: jump to prev highlighted item 
             self.jump_to_prev_highlight() 
             return True
         if event.keyval == gtk.keysyms.F3:
             # drnol: jump to next highlighted item 
             self.jump_to_next_highlight() 
+            return True
+        if event.keyval == gtk.keysyms.bracketleft:
+            # drnol: select prev edge of focused node
+            self.select_prev_edge_of_focused_node()
+            return True
+        if event.keyval == gtk.keysyms.bracketright:            
+            # drnol: select next edge of focused node
+            self.select_next_edge_of_focused_node()
+            return True
+        if event.keyval == gtk.keysyms.Return:
+            # drnol: follow selected edge
+            self.follow_selected_edge()
             return True
         return False
 
@@ -1756,24 +1789,80 @@ class DotWidget(gtk.DrawingArea):
     def jump_to_prev_highlight(self):        
         if self.highlight:
             if len(self.highlight) > 0:
-                if self.focused == None:
-                    self.focused = 0
+                if (self.focused_index == None) or (self.focused_index == 0):
+                    self.focused_index = len(self.highlight)-1
                 else:
-                    self.focused = (self.focused+1) % len(self.highlight)
-                item = self.highlight[len(self.highlight)-self.focused-1]
-                self.animate_to(item.x, item.y)
+                    self.focused_index = self.focused_index-1
+                node = self.highlight[self.focused_index]
+                self.focus_node(node)
                 
     # drnol: jump to next highlighted item
     def jump_to_next_highlight(self):        
         if self.highlight:
             if len(self.highlight) > 0:
-                if self.focused == None:
-                    self.focused = 0
+                if self.focused_index == None:
+                    self.focused_index = 0
                 else:
-                    self.focused = (self.focused+1) % len(self.highlight)
-                item = self.highlight[self.focused]
-                self.animate_to(item.x, item.y)
+                    self.focused_index = (self.focused_index+1) % len(self.highlight)
+                node = self.highlight[self.focused_index]
+                self.focus_node(node)
 
+    def focus_node(self, node):
+        self.selected_edge = None
+        self.selected_node = node
+        self.animate_to(node.x, node.y)
+        
+    # drnol: select prev edge of focused node
+    def select_prev_edge_of_focused_node(self):
+        if self.selected_node != None:
+            if self.graph.edgemap.has_key(self.selected_node):
+                edges = self.graph.edgemap[self.selected_node]
+                # if there is more than one edge in the selected node
+                if len(edges) > 0:            
+                    if (self.selected_edge_index == None) or (self.selected_edge_index == 0):
+                        self.selected_edge_index = len(selected_edge_index)-1
+                    else:
+                        self.selected_edge_index = self.selected_edge_index-1
+                    edge = edges[self.selected_edge_index]
+                    self.select_edge_with_highlight(edge)
+                    
+    # drnol: select next edge of focused node
+    def select_next_edge_of_focused_node(self):
+        if self.selected_node != None:
+            if self.graph.edgemap.has_key(self.selected_node):
+                edges = self.graph.edgemap[self.selected_node]
+                # if there is more than one edge in the selected node
+                if len(edges) > 0:            
+                    if self.selected_edge_index == None:
+                        self.selected_edge_index = 0
+                    else:
+                        self.selected_edge_index = (self.selected_edge_index+1) % len(edges)
+                    edge = edges[self.selected_edge_index]
+                    self.select_edge_with_highlight(edge)
+                    
+    #drnol: select edge
+    def select_edge_with_highlight(self, edge):
+        # don't use set_highlight, because set_highlight performs resetting selections
+        self.highlight = [self.selected_node, edge]
+        self.queue_draw()
+        
+    #drnol: follow selected edge
+    def follow_selected_edge(self):
+        if (self.selected_node != None) and (self.selected_edge_index != None):
+            edges = self.graph.edgemap[self.selected_node]
+            edge = edges[self.selected_edge_index]
+                            
+            # follow to opposite node                
+            if edge.src == self.selected_node:
+                target = edge.dst
+            else:
+                target = edge.src
+                    
+            # jump to selected node
+            self.focus_node(target)
+            self.highlight = [target]
+            self.queue_draw()            
+                    
     print_settings = None
     def on_print(self, action=None):
         print_op = gtk.PrintOperation()
@@ -1860,6 +1949,11 @@ class DotWidget(gtk.DrawingArea):
                     jump = self.get_jump(x, y)
                     if jump is not None:
                         self.animate_to(jump.x, jump.y)
+                        
+                        # drnol: node selection
+                        element = self.get_element(x, y)
+                        if isinstance(element, Node):
+                            self.selected_node = element
 
                 return True
 
@@ -2125,9 +2219,12 @@ Shortcuts:
   P                         print
   Escape                    halt animation
   Ctrl-drag                 zoom in/out
-  Shift-drag                zooms an area
-  F2                        next highlighted item
+  Shift-drag                zooms an area  
+  F2                        prev highlighted item
   F3                        next highlighted item
+  [                         select prev focused node's edge
+  ]                         select next focused node's edge
+  Enter                     follow selected edge
 '''
     )
     parser.add_option(

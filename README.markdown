@@ -105,6 +105,9 @@ Command Line
       Shift-drag                zooms an area
       F2						prev highlighted item
       F3						next highlighted item
+      [                         select prev focused node's edge
+      ]                         select next focused node's edge
+      Enter                     follow selected edge
 
 If no input file is given then it will read the dot graph from the standard input.
 
