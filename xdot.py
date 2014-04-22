@@ -1479,7 +1479,8 @@ class DotWidget(gtk.DrawingArea):
     }
 
     filter = 'dot'
-
+    focused = None 
+    
     def __init__(self):
         gtk.DrawingArea.__init__(self)
 
@@ -1741,7 +1742,22 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.p:
             self.on_print()
             return True
+        if event.keyval == gtk.keysyms.F3:
+            # drnol: jump to next highlighted item 
+            self.jump_to_next_highlight() 
+            return True
         return False
+
+    # drnol: jump to next highlighted item
+    def jump_to_next_highlight(self):        
+        if self.highlight:
+            if len(self.highlight) > 0:
+                if self.focused == None:
+                    self.focused = 0
+                else:
+                    self.focused = (self.focused+1) % len(self.highlight)
+                item = self.highlight[self.focused]
+                self.animate_to(item.x, item.y)
 
     print_settings = None
     def on_print(self, action=None):
