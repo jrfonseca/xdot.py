@@ -1422,9 +1422,12 @@ class NullAction(DragAction):
         if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
             dot_widget.set_highlight(item.highlight)
+            
+            # drnol: selection nodes
+            dot_widget.focus_node_at(x,y)
         else:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-            # don't reset highlights when just move
+            # drnoL: don't reset highlights when just move
             # dot_widget.set_highlight(None)
 
 
@@ -1643,9 +1646,12 @@ class DotWidget(gtk.DrawingArea):
 
     def set_highlight(self, items):
         if self.highlight != items:
+            # drnol: focusing and selection / reset
             self.focused_index = None # drnol: reset node focus
             self.selected_node = None # drnol: reset node selection
-            self.selected_edge_index = None # drnol: reset edge selection 
+            self.selected_edge_index = None # drnol: reset edge selection
+            
+            # original action 
             self.highlight = items
             self.queue_draw()
 
@@ -1807,10 +1813,18 @@ class DotWidget(gtk.DrawingArea):
                 node = self.highlight[self.focused_index]
                 self.focus_node(node)
 
+    # drnol: focus node
     def focus_node(self, node):
         self.selected_edge = None
         self.selected_node = node
         self.animate_to(node.x, node.y)
+        
+    # drnol: focus node by coordinate 
+    def focus_node_at(self, x, y):
+        elt = self.get_element(x, y)
+        if (elt != None) and (isinstance(elt,Node)):
+            self.focused_index = 0
+            self.selected_node = elt
         
     # drnol: select prev edge of focused node
     def select_prev_edge_of_focused_node(self):
