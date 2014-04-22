@@ -1771,11 +1771,11 @@ class DotWidget(gtk.DrawingArea):
             # drnol: jump to next highlighted item 
             self.jump_to_next_highlight() 
             return True
-        if event.keyval == gtk.keysyms.bracketleft:
+        if event.keyval == gtk.keysyms.comma:
             # drnol: select prev edge of focused node
             self.select_prev_edge_of_focused_node()
             return True
-        if event.keyval == gtk.keysyms.bracketright:            
+        if event.keyval == gtk.keysyms.period:            
             # drnol: select next edge of focused node
             self.select_next_edge_of_focused_node()
             return True
@@ -1819,8 +1819,8 @@ class DotWidget(gtk.DrawingArea):
                 edges = self.graph.edgemap[self.selected_node]
                 # if there is more than one edge in the selected node
                 if len(edges) > 0:            
-                    if (self.selected_edge_index == None) or (self.selected_edge_index == 0):
-                        self.selected_edge_index = len(selected_edge_index)-1
+                    if (self.selected_edge_index == None) or (self.selected_edge_index <= 0):
+                        self.selected_edge_index = len(edges)-1
                     else:
                         self.selected_edge_index = self.selected_edge_index-1
                     edge = edges[self.selected_edge_index]
@@ -2238,8 +2238,8 @@ Shortcuts:
   Shift-drag                zooms an area  
   F2                        prev highlighted item
   F3                        next highlighted item
-  [                         select prev focused node's edge
-  ]                         select next focused node's edge
+  ,                         select prev focused node's edge
+  .                         select next focused node's edge
   Enter                     follow selected edge
 '''
     )
