@@ -1860,8 +1860,24 @@ class DotWidget(gtk.DrawingArea):
                     
             # jump to selected node
             self.focus_node(target)
-            self.highlight = [target]
+            
+            # automatically select one of other edges 
+            self.selected_edge_index, new_edge = self.try_find_other_edge_index(edge)
+            self.highlight = [target, new_edge]
             self.queue_draw()            
+                    
+    #drnol: try finding the other edge 
+    def try_find_other_edge_index(self, edge):        
+        edges = self.graph.edgemap[self.selected_node]
+        
+        edge_index = 0
+        new_edge = edges[0]
+        for i in range(1, len(edges)):
+            if edges[i] != edge:
+                edge_index = i
+                new_edge = edges[i]
+                
+        return edge_index, new_edge
                     
     print_settings = None
     def on_print(self, action=None):
