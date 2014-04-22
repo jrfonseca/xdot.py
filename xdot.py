@@ -519,6 +519,57 @@ class Graph(Shape):
                 return jump
         return None
 
+    # drnol: get ui shortest path
+    # use directed graph
+    def get_shortest_element_path(self, start, end):
+        node_path = self.find_shortest_node_path(start, end)
+        
+        if (node_path != None) and (len(node_path)>0):
+            path = [node_path[0]]
+            for i in range(0, (len(node_path)-1)):
+                src = node_path[i]
+                dst = node_path[i+1]
+                path.append(self.lookup_edge(src,dst))
+                path.append(dst)
+            
+            return path                
+        else:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
+                  message_format="There is no path",
+                  buttons=gtk.BUTTONS_OK)
+            dlg.set_title("Path Info")
+            dlg.run()
+            dlg.destroy()
+            return [start]
+
+    # drnol: edge lookup by src,dst
+    def lookup_edge(self,src,dst):
+        for edge in self.edgemap[src]:
+            if edge.dst == dst:
+                return edge
+        return None
+
+    # drnol: simple shortest path calculator
+    # just get node path 
+    # TODO: must be optimize 
+    def find_shortest_node_path(self, start, end, path=[]):
+        path = list(path) #
+        path.append(start)
+                
+        if start == end:
+            return path
+                
+        if not self.edgemap.has_key(start):
+            return None
+                
+        shortest = None
+        for edge in self.edgemap[start]:
+            if (edge.src == start) and (edge.dst not in path):
+                newpath = self.find_shortest_node_path(edge.dst, end, path)
+                if newpath:
+                    if not shortest or len(newpath) < len(shortest):
+                        shortest = newpath
+        return shortest
 
 BOLD = 1
 ITALIC = 2
@@ -1410,27 +1461,32 @@ class DragAction(object):
 
 class NullAction(DragAction):
 
-    def on_motion_notify(self, event):
+    def on_motion_notify(self, event):        
         if event.is_hint:
             x, y, state = event.window.get_pointer()
         else:
             x, y, state = event.x, event.y, event.state
+            
+        # drnol: skip when shift is pressed
+        if state & gtk.gdk.CONTROL_MASK:
+            return  
+                        
         dot_widget = self.dot_widget
         item = dot_widget.get_url(x, y)
         if item is None:
             item = dot_widget.get_jump(x, y)
         if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
-            dot_widget.set_highlight(item.highlight)
-            
+            # drnol: don't reset highlights when hover
+            # dot_widget.set_highlight(item.highlight)
+                        
             # drnol: selection nodes
-            dot_widget.focus_node_at(x,y)
+            # dot_widget.focus_node_at(x,y)
         else:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-            # drnoL: don't reset highlights when just move
+            # drnol: don't reset highlights when just move
             # dot_widget.set_highlight(None)
-
-
+   
 class PanAction(DragAction):
 
     def start(self):
@@ -1962,6 +2018,31 @@ class DotWidget(gtk.DrawingArea):
         (click on empty space)."""
         return False
 
+    def show_path(self, end_node):
+        if (self.highlight != None) and (len(self.highlight) == 1):
+            elt = list(self.highlight)[0]
+            if (isinstance(elt,Node)):
+                self.build_path(elt, end_node)             
+                self.set_highlight(self.path)
+                self.queue_draw()
+            else:
+                dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                            message_format="Start node must be NODE",
+                            buttons=gtk.BUTTONS_OK)
+                dlg.set_title("Path Selection Error!")
+                dlg.run()
+                dlg.destroy()
+        else:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                        message_format="Only one node allowed as start node",
+                        buttons=gtk.BUTTONS_OK)
+            dlg.set_title("Path Selection Error!")
+            dlg.run()
+            dlg.destroy()
+    
+    def build_path(self, start, end):
+        self.path = self.graph.get_shortest_element_path(start, end)
+    
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
         self.drag_action = NullAction(self)
@@ -1982,9 +2063,12 @@ class DotWidget(gtk.DrawingArea):
                         
                         # drnol: node selection
                         element = self.get_element(x, y)
-                        if isinstance(element, Node):
-                            self.selected_node = element
-
+                        if isinstance(element, Node):   
+                            if event.state & gtk.gdk.CONTROL_MASK:
+                                self.show_path(element)
+                            else:
+                                self.set_highlight([element])
+                                self.selected_node = element                                                                                                                                 
                 return True
 
         if event.button == 1 or event.button == 2:
@@ -2255,6 +2339,7 @@ Shortcuts:
   ,                         select prev focused node's edge
   .                         select next focused node's edge
   Enter                     follow selected edge
+  Ctrl-click                display shortest path
 '''
     )
     parser.add_option(

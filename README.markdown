@@ -108,6 +108,7 @@ Command Line
       ,                         select prev focused node's edge
       .                         select next focused node's edge
       Enter                     follow selected edge
+      Ctrl-click                display shortest path
 
 If no input file is given then it will read the dot graph from the standard input.
 
