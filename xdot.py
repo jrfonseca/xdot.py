@@ -1709,7 +1709,6 @@ class DotWidget(gtk.DrawingArea):
             self.focused_index = None # drnol: reset node focus
             self.selected_node = None # drnol: reset node selection
             self.selected_edge_index = None # drnol: reset edge selection
-            self.path_pivot_node = None # drnol: reset path pivot
             
             # original action 
             self.highlight = items
@@ -2108,7 +2107,7 @@ class DotWidget(gtk.DrawingArea):
                                 self.path_pivot_node = element
                         else:
                             self.selected_node = None
-                            self.path_pivot_node = None                                                                                                           
+                            self.path_pivot_node = None                                                                                                   
                 return True
 
         if event.button == 1 or event.button == 2:
