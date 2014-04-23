@@ -1554,9 +1554,6 @@ class DotWidget(gtk.DrawingArea):
     }
 
     filter = 'dot'
-    focused_index = None
-    selected_node = None
-    selected_edge = None
     
     def __init__(self):
         gtk.DrawingArea.__init__(self)
@@ -1586,6 +1583,12 @@ class DotWidget(gtk.DrawingArea):
         self.drag_action = NullAction(self)
         self.presstime = None
         self.highlight = None
+        
+        # drnol: selections and path related variables
+        self.focused_index = None
+        self.selected_node = None
+        self.selected_edge = None
+        self.path_pivot_node = None
 
     def set_filter(self, filter):
         self.filter = filter
@@ -2018,27 +2021,39 @@ class DotWidget(gtk.DrawingArea):
         (click on empty space)."""
         return False
 
-    def show_path(self, end_node):
-        if (self.highlight != None) and (len(self.highlight) == 1):
-            elt = list(self.highlight)[0]
-            if (isinstance(elt,Node)):
-                self.build_path(elt, end_node)             
-                self.set_highlight(self.path)
-                self.queue_draw()
+    # drnol: display shortest path
+    # if there is one selected node A -> path between A and just before ctrl-clicked node B 
+    # if there are previously displayed path and pivot node A -> path between A and just before ctrl-clicked node B 
+    def show_path(self, end_node, reverse=False):
+        if self.path_pivot_node == None:
+            if (self.highlight != None) and (len(self.highlight) == 1):
+                elt = list(self.highlight)[0]
+                if (isinstance(elt,Node)):
+                    self.path_pivot_node = elt
+                else:
+                    dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                message_format="Start node must be NODE",
+                                buttons=gtk.BUTTONS_OK)
+                    dlg.set_title("Path Selection Error!")
+                    dlg.run()
+                    dlg.destroy()
+                    return
             else:
                 dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
-                            message_format="Start node must be NODE",
+                            message_format="Only one node allowed as start node",
                             buttons=gtk.BUTTONS_OK)
                 dlg.set_title("Path Selection Error!")
                 dlg.run()
                 dlg.destroy()
+                return
+        # build path        
+        if reverse:
+            self.build_path(end_node, self.path_pivot_node)
         else:
-            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
-                        message_format="Only one node allowed as start node",
-                        buttons=gtk.BUTTONS_OK)
-            dlg.set_title("Path Selection Error!")
-            dlg.run()
-            dlg.destroy()
+            self.build_path(self.path_pivot_node, end_node)
+        # display path
+        self.set_highlight(self.path)
+        self.queue_draw()
     
     def build_path(self, start, end):
         self.path = self.graph.get_shortest_element_path(start, end)
@@ -2065,10 +2080,14 @@ class DotWidget(gtk.DrawingArea):
                         element = self.get_element(x, y)
                         if isinstance(element, Node):   
                             if event.state & gtk.gdk.CONTROL_MASK:
-                                self.show_path(element)
+                                if event.state & gtk.gdk.SHIFT_MASK:
+                                    self.show_path(element, True) # reverse path
+                                else:
+                                    self.show_path(element) # normal path
                             else:
                                 self.set_highlight([element])
-                                self.selected_node = element                                                                                                                                 
+                                self.selected_node = element
+                                self.path_pivot_node = None                                                                                                                         
                 return True
 
         if event.button == 1 or event.button == 2:
@@ -2339,7 +2358,8 @@ Shortcuts:
   ,                         select prev focused node's edge
   .                         select next focused node's edge
   Enter                     follow selected edge
-  Ctrl-click                display shortest path
+  Ctrl-click                display shortest path (retargetable)
+  Ctrl-shift-click          display reverse shortest path (retargetable)
 '''
     )
     parser.add_option(

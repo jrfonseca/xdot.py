@@ -108,7 +108,8 @@ Command Line
       ,                         select prev focused node's edge
       .                         select next focused node's edge
       Enter                     follow selected edge
-      Ctrl-click                display shortest path
+      Ctrl-click                display shortest path (retargetable)
+      Ctrl-shift-click          display reverse shortest path (retargetable)
 
 If no input file is given then it will read the dot graph from the standard input.
 
