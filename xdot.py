@@ -1461,7 +1461,7 @@ class DragAction(object):
 
 class NullAction(DragAction):
 
-    def on_motion_notify(self, event):        
+    def on_motion_notify(self, event):       
         if event.is_hint:
             x, y, state = event.window.get_pointer()
         else:
@@ -1554,7 +1554,7 @@ class DotWidget(gtk.DrawingArea):
     }
 
     filter = 'dot'
-    
+
     def __init__(self):
         gtk.DrawingArea.__init__(self)
 
@@ -1709,6 +1709,7 @@ class DotWidget(gtk.DrawingArea):
             self.focused_index = None # drnol: reset node focus
             self.selected_node = None # drnol: reset node selection
             self.selected_edge_index = None # drnol: reset edge selection
+            self.path_pivot_node = None # drnol: reset path pivot
             
             # original action 
             self.highlight = items
@@ -1852,25 +1853,38 @@ class DotWidget(gtk.DrawingArea):
 
     # drnol: jump to prev highlighted item
     def jump_to_prev_highlight(self):        
-        if self.highlight:
+        if self.exists_highlighted_node():
             if len(self.highlight) > 0:
                 if (self.focused_index == None) or (self.focused_index == 0):
                     self.focused_index = len(self.highlight)-1
                 else:
-                    self.focused_index = self.focused_index-1
-                node = self.highlight[self.focused_index]
-                self.focus_node(node)
+                    self.focused_index = self.focused_index-1              
+                element = self.highlight[self.focused_index]
+                if isinstance(element,Node):
+                    self.focus_node(element)
+                else:
+                    self.jump_to_prev_highlight() # skip edge
                 
     # drnol: jump to next highlighted item
-    def jump_to_next_highlight(self):        
-        if self.highlight:
+    def jump_to_next_highlight(self):
+        if self.exists_highlighted_node():
             if len(self.highlight) > 0:
                 if self.focused_index == None:
                     self.focused_index = 0
                 else:
                     self.focused_index = (self.focused_index+1) % len(self.highlight)
-                node = self.highlight[self.focused_index]
-                self.focus_node(node)
+                element = self.highlight[self.focused_index]
+                if isinstance(element,Node):
+                    self.focus_node(element)
+                else:
+                    self.jump_to_next_highlight() # skip edge
+
+    # drnol: check existence of highlighted node in highlight list
+    def exists_highlighted_node(self):
+        for element in self.highlight:
+            if isinstance(element,Node):
+                return True
+        return False
 
     # drnol: focus node
     def focus_node(self, node):
@@ -1916,7 +1930,10 @@ class DotWidget(gtk.DrawingArea):
     #drnol: select edge
     def select_edge_with_highlight(self, edge):
         # don't use set_highlight, because set_highlight performs resetting selections
-        self.highlight = [self.selected_node, edge]
+        if self.selected_node==edge.src:
+            self.highlight = [edge.src, edge, edge.dst]
+        else:
+            self.highlight = [edge.dst, edge, edge.src]                    
         self.queue_draw()
         
     #drnol: follow selected edge
@@ -2087,7 +2104,11 @@ class DotWidget(gtk.DrawingArea):
                             else:
                                 self.set_highlight([element])
                                 self.selected_node = element
-                                self.path_pivot_node = None                                                                                                                         
+                                self.focused_index = 0
+                                self.path_pivot_node = element
+                        else:
+                            self.selected_node = None
+                            self.path_pivot_node = None                                                                                                           
                 return True
 
         if event.button == 1 or event.button == 2:
