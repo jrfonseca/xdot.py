@@ -38,7 +38,6 @@ import cairo
 import pango
 import pangocairo
 
-
 # See http://www.graphviz.org/pub/scm/graphviz-cairo/plugin/cairo/gvrender_cairo.c
 
 # For pygtk inspiration and guidance see:
@@ -416,10 +415,11 @@ def square_distance(x1, y1, x2, y2):
 
 class Edge(Element):
 
-    def __init__(self, src, dst, points, shapes):
+    def __init__(self, src, dst, points, shapes, dir):
         Element.__init__(self, shapes)
         self.src = src
         self.dst = dst
+        self.dir = dir
         self.points = points
 
     RADIUS = 10
@@ -507,7 +507,7 @@ class Graph(Shape):
             if url is not None:
                 return url
         return None
-    
+
     def get_jump(self, x, y):
         for edge in self.edges:
             jump = edge.get_jump(x, y)
@@ -529,18 +529,12 @@ class Graph(Shape):
             for i in range(0, (len(node_path)-1)):
                 src = node_path[i]
                 dst = node_path[i+1]
-                path.append(self.lookup_edge(src,dst))
+                path.append(self.lookup_bidirection_edge(src,dst))
                 path.append(dst)
             
             return path                
         else:
-            dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
-                  message_format="There is no path",
-                  buttons=gtk.BUTTONS_OK)
-            dlg.set_title("Path Info")
-            dlg.run()
-            dlg.destroy()
-            return [start]
+            return None
 
     # drnol: edge lookup by src,dst
     def lookup_edge(self,src,dst):
@@ -549,12 +543,17 @@ class Graph(Shape):
                 return edge
         return None
 
+    def lookup_bidirection_edge(self,src,dst):
+        edge = self.lookup_edge(src, dst)
+        if not edge:
+            edge = self.lookup_edge(dst, src)
+        return edge
+
     # drnol: simple shortest path calculator
     # just get node path 
     # TODO: must be optimize 
     def find_shortest_node_path(self, start, end, path=[]):
-        path = list(path) #
-        path.append(start)
+        path = path + [start]
                 
         if start == end:
             return path
@@ -566,6 +565,11 @@ class Graph(Shape):
         for edge in self.edgemap[start]:
             if (edge.src == start) and (edge.dst not in path):
                 newpath = self.find_shortest_node_path(edge.dst, end, path)
+                if newpath:
+                    if not shortest or len(newpath) < len(shortest):
+                        shortest = newpath
+            elif (edge.dir=="none") and (edge.dst == start) and (edge.src not in path): # bi-direction support
+                newpath = self.find_shortest_node_path(edge.src, end, path)
                 if newpath:
                     if not shortest or len(newpath) < len(shortest):
                         shortest = newpath
@@ -1287,6 +1291,11 @@ class XDotParser(DotParser):
         except KeyError:
             return
         
+        try:
+            dir = attrs['dir']
+        except:
+            dir=""
+
         points = self.parse_edge_pos(pos)
         shapes = []
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
@@ -1296,7 +1305,7 @@ class XDotParser(DotParser):
         if shapes:
             src = self.node_by_name[src_id]
             dst = self.node_by_name[dst_id]
-            self.edges.append(Edge(src, dst, points, shapes))
+            self.edges.append(Edge(src, dst, points, shapes, dir))
 
     def parse(self):
         DotParser.parse(self)
@@ -1550,7 +1559,9 @@ class DotWidget(gtk.DrawingArea):
 
     __gsignals__ = {
         'expose-event': 'override',
-        'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
+        'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event)),
+        # drnol; url right click action
+        'url_right_clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
     }
 
     filter = 'dot'
@@ -2067,13 +2078,35 @@ class DotWidget(gtk.DrawingArea):
             self.build_path(end_node, self.path_pivot_node)
         else:
             self.build_path(self.path_pivot_node, end_node)
-        # display path
-        self.set_highlight(self.path)
-        self.queue_draw()
-    
+
+        if not self.path:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
+                  message_format="There is no path",
+                  buttons=gtk.BUTTONS_OK)
+            dlg.set_title("Path Info")
+            dlg.run()
+            dlg.destroy()
+        else:
+            # display path
+            self.set_highlight(self.path)
+            self.queue_draw()
+
     def build_path(self, start, end):
         self.path = self.graph.get_shortest_element_path(start, end)
     
+    # drnol: url right click implementation
+    def do_url_right_clicked(self, url, event):
+        # drnol: open new dot files directives
+        # currently depend on operating system
+        if (url.index("dots://")==0) and (os.uname()[0]=="Linux"):
+            dots = url[7:].split(';')
+            dirname = os.path.dirname(self.openfilename)
+            if dirname!="":
+                dirname=dirname+"/"
+            for dot in dots:
+                subprocess.Popen([sys.argv[0], dirname+dot])
+        return
+
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
         self.drag_action = NullAction(self)
@@ -2087,28 +2120,34 @@ class DotWidget(gtk.DrawingArea):
                 url = self.get_url(x, y)
                 if url is not None:
                     self.emit('clicked', unicode(url.url), event)
-                else:
-                    jump = self.get_jump(x, y)
-                    if jump is not None:
-                        self.animate_to(jump.x, jump.y)
-                        
-                        # drnol: node selection
-                        element = self.get_element(x, y)
-                        if isinstance(element, Node):   
-                            if event.state & gtk.gdk.CONTROL_MASK:
-                                if event.state & gtk.gdk.SHIFT_MASK:
-                                    self.show_path(element, True) # reverse path
-                                else:
-                                    self.show_path(element) # normal path
+                # drnol: disable url node's skipping action because of node selection
+                # else:
+                jump = self.get_jump(x, y)
+                if jump is not None:
+                    self.animate_to(jump.x, jump.y)
+
+                    # drnol: node selection
+                    element = self.get_element(x, y)
+                    if isinstance(element, Node):
+                        if event.state & gtk.gdk.CONTROL_MASK:
+                            if event.state & gtk.gdk.SHIFT_MASK:
+                                self.show_path(element, True) # reverse path
                             else:
-                                self.set_highlight([element])
-                                self.selected_node = element
-                                self.focused_index = 0
-                                self.path_pivot_node = element
+                                self.show_path(element) # normal path
                         else:
-                            self.selected_node = None
-                            self.path_pivot_node = None                                                                                                   
+                            self.set_highlight([element])
+                            self.selected_node = element
+                            self.focused_index = 0
+                            self.path_pivot_node = element
+                    else:
+                        self.selected_node = None
+                        self.path_pivot_node = None
                 return True
+            elif event.button == 3:
+                url = self.get_url(x, y)
+                if url is not None:
+                    self.emit('url_right_clicked', unicode(url.url), event)
+
 
         if event.button == 1 or event.button == 2:
             return True
@@ -2287,6 +2326,10 @@ class DotWindow(gtk.Window):
         dot_widget.set_highlight(found_items)
         if(len(found_items) == 1):
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
+            # drnol: select/focus node
+            dot_widget.selected_node = found_items[0]
+            dot_widget.path_pivot_node = found_items[0]
+            dot_widget.focused_index = 0
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
@@ -2358,7 +2401,6 @@ class OptionParser(optparse.OptionParser):
 
 
 def main():
-
     parser = OptionParser(
         usage='\n\t%prog [file]',
         epilog='''
@@ -2380,6 +2422,7 @@ Shortcuts:
   Enter                     follow selected edge
   Ctrl-click                display shortest path (retargetable)
   Ctrl-shift-click          display reverse shortest path (retargetable)
+  right click               dot url open ([URL="dots://file1;file2;..."]) (Linux only)
 '''
     )
     parser.add_option(

@@ -110,6 +110,7 @@ Command Line
       Enter                     follow selected edge
       Ctrl-click                display shortest path (retargetable)
       Ctrl-shift-click          display reverse shortest path (retargetable)
+      right click               dot url open ([URL="dots://file1;file2;..."]) (Linux only)
 
 If no input file is given then it will read the dot graph from the standard input.
 
