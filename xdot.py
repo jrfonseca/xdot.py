@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #
 # Copyright 2008 Jose Fonseca
 #
@@ -1619,7 +1619,7 @@ class DotWidget(gtk.DrawingArea):
     __gsignals__ = {
         'expose-event': 'override',
         'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event)),
-        # drnol; url right click action
+        # drnol: url right click action
         'url_right_clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
     }
 
@@ -1652,7 +1652,12 @@ class DotWidget(gtk.DrawingArea):
         self.animation = NoAnimation(self)
         self.drag_action = NullAction(self)
         self.presstime = None
+        
+        self.doc_init()
 
+    
+    # drnol: doc init for multiple open
+    def doc_init(self):
         # drnol: selections and path related variables
         self.focused_index = None
         self.pivot_node = None
@@ -1704,6 +1709,8 @@ class DotWidget(gtk.DrawingArea):
             return False
         try:
             self.set_xdotcode(xdotcode)
+            # drnol: reset focus/selection state
+            self.doc_init()
         except ParseError as ex:
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=str(ex),
@@ -1990,7 +1997,7 @@ class DotWidget(gtk.DrawingArea):
             else:
                 self.jump_to_next_selected_node() # skip edge
 
-    # drnol: if path is displayed then traversal list is path otherwise selected nodes 
+    # drnol: if path is displayed then traversal list is path otherwise selected nodes
     def get_traversal_list(self):
         if self.path != None:
             for element in self.path:
@@ -2307,6 +2314,10 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
             <separator/>
+            <toolitem action="Previous"/>
+            <toolitem action="Next"/>
+            <toolitem action="Quit"/>
+            <separator/>
             <toolitem name="Find" action="Find"/>
         </toolbar>
     </ui>
@@ -2328,6 +2339,8 @@ class DotWindow(gtk.Window):
 
         self.widget = widget or DotWidget()
 
+        self.connect('key-press-event', self.on_window_key_press_event)
+
         # Create a UIManager instance
         uimanager = self.uimanager = gtk.UIManager()
 
@@ -2348,6 +2361,9 @@ class DotWindow(gtk.Window):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+            ('Previous', gtk.STOCK_GO_BACK, None, None, None, self.on_prev),
+            ('Next', gtk.STOCK_GO_FORWARD, None, None, None, self.on_next),
+            ('Quit', gtk.STOCK_QUIT, None, None, None, self.on_quit),
         ))
 
         find_action = FindMenuToolAction("Find", None,
@@ -2363,6 +2379,14 @@ class DotWindow(gtk.Window):
         # Create a Toolbar
         toolbar = uimanager.get_widget('/ToolBar')
         vbox.pack_start(toolbar, False)
+
+        # Create a text entry box for the filename
+        file_entry = gtk.Entry()
+        self.file_entry = file_entry
+        file_entry.set_has_frame(True)
+        file_entry.set_text('')
+        file_entry.connect("activate", self.on_text_open)
+        vbox.pack_start(file_entry, False)
 
         vbox.pack_start(self.widget)
 
@@ -2437,10 +2461,35 @@ class DotWindow(gtk.Window):
 
     def open_file(self, filename):
         try:
+            self.file_entry.set_text(filename)
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError as ex:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format=str(ex),
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title(self.base_title)
+            dlg.run()
+            dlg.destroy()
+
+    def build_file_list(self, filepath):
+        try:
+            filepath = os.path.abspath(filepath)
+            if os.path.isdir(filepath):
+                directory = filepath
+            else:
+                directory = os.path.dirname(filepath)
+            sori = lambda x: (int(x) if x.isdigit() else x) # returns s(tring) or i(nteger)
+            natkey = lambda x: [sori(y) for y in re.split(r'(\d+)', x)]
+            self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')],
+                                        key=natkey)
+            if os.path.isdir(filepath):
+                self.file_index = 0
+            else:
+                self.file_index = self.files_in_dir.index(filepath)
+            self.file_dir   = directory
+        except Exception as ex:
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
@@ -2465,16 +2514,77 @@ class DotWindow(gtk.Window):
         filter.set_name("All files")
         filter.add_pattern("*")
         chooser.add_filter(filter)
+        try:
+            chooser.set_current_folder(self.file_dir)
+        except AttributeError:
+            pass # Will happen on the first call, because self.file_dir would not exist
+        except:
+            raise
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
             self.last_open_dir = chooser.get_current_folder()
             chooser.destroy()
+            self.build_file_list(filename)
             self.open_file(filename)
         else:
             chooser.destroy()
 
+    def on_text_open(self, action):
+        fileentry = self.file_entry.get_text()
+        if os.path.exists(fileentry):
+            fileentry = os.path.abspath(fileentry)
+            self.file_entry.set_text(fileentry)
+            self.file_entry.set_position(1000) # some large number to push the cursor to the end
+
+        if os.path.isfile(fileentry):
+            self.build_file_list(fileentry)
+            self.open_file(fileentry)
+            self.child_focus(gtk.DIR_TAB_FORWARD)
+        elif os.path.isdir(fileentry):
+            self.build_file_list(fileentry)
+            if self.files_in_dir:              # found .dot files
+                self.open_file(self.files_in_dir[0])
+                self.child_focus(gtk.DIR_TAB_FORWARD)
+
     def on_reload(self, action):
         self.widget.reload()
+
+    def on_quit(self, action):
+        gtk.main_quit()
+
+    def on_next(self, action):
+        try:
+            self.file_index += 1
+            if self.file_index >= len(self.files_in_dir):
+                self.file_index = 0
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_prev(self, action):
+        try:
+            self.file_index -= 1
+            if self.file_index < 0:
+                self.file_index = len(self.files_in_dir)-1
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_window_key_press_event(self, widget, event):
+        if self.file_entry.is_focus():
+            return False
+        if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
+            self.on_prev(None)
+            return True
+        if event.keyval == gtk.keysyms.n or event.keyval == gtk.keysyms.k:
+            self.on_next(None)
+            return True
+        if event.keyval == gtk.keysyms.o:
+            self.on_open(None)
+            return True
+        return False
 
 
 class OptionParser(optparse.OptionParser):
@@ -2534,6 +2644,7 @@ Shortcuts:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
         else:
+            win.build_file_list(args[0])
             win.open_file(args[0])
     gtk.main()
 
