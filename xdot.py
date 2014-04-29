@@ -1641,7 +1641,6 @@ class DotWidget(gtk.DrawingArea):
         self.connect("scroll-event", self.on_area_scroll_event)
         self.connect("size-allocate", self.on_area_size_allocate)
 
-        #self.connect('key-press-event', self.on_key_press_event)
         self.last_mtime = None
 
         gobject.timeout_add(1000, self.update)
@@ -2571,13 +2570,14 @@ class DotWindow(gtk.Window):
             # drnol: jump to prev highlighted item
             self.widget.jump_to_prev_selected_node()
             return True
-        if event.keyval == gtk.keysyms.F3:
+        elif event.keyval == gtk.keysyms.F3:
             # drnol: jump to next highlighted item
             self.widget.jump_to_next_selected_node()
             return True
 
         if self.file_entry.is_focus() or self.textentry.is_focus():
             return False
+
         if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
             self.on_prev(None)
             return True
@@ -2619,6 +2619,9 @@ Shortcuts:
   ,                         select prev focused node's edge
   .                         select next focused node's edge
   Enter                     follow selected edge
+  p,j                       prev file
+  n,k                       next file
+  o                         browse file
   Ctrl-click                display shortest path (retargetable)
   Ctrl-shift-click          display reverse shortest path (retargetable)
   right click               dot url open ([URL="dots://file1;file2;..."]) (Linux only)

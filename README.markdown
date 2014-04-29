@@ -107,6 +107,9 @@ Command Line
       F3						next highlighted item
       ,                         select prev focused node's edge
       .                         select next focused node's edge
+      p,j                       prev file
+      n,k                       next file
+      o                         browse file
       Enter                     follow selected edge
       Ctrl-click                display shortest path (retargetable)
       Ctrl-shift-click          display reverse shortest path (retargetable)
