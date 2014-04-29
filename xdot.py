@@ -1641,7 +1641,7 @@ class DotWidget(gtk.DrawingArea):
         self.connect("scroll-event", self.on_area_scroll_event)
         self.connect("size-allocate", self.on_area_size_allocate)
 
-        self.connect('key-press-event', self.on_key_press_event)
+        #self.connect('key-press-event', self.on_key_press_event)
         self.last_mtime = None
 
         gobject.timeout_add(1000, self.update)
@@ -1652,10 +1652,10 @@ class DotWidget(gtk.DrawingArea):
         self.animation = NoAnimation(self)
         self.drag_action = NullAction(self)
         self.presstime = None
-        
+
         self.doc_init()
 
-    
+
     # drnol: doc init for multiple open
     def doc_init(self):
         # drnol: selections and path related variables
@@ -1946,14 +1946,6 @@ class DotWidget(gtk.DrawingArea):
             return True
         if event.keyval == gtk.keysyms.p:
             self.on_print()
-            return True
-        if event.keyval == gtk.keysyms.F2:
-            # drnol: jump to prev highlighted item
-            self.jump_to_prev_selected_node()
-            return True
-        if event.keyval == gtk.keysyms.F3:
-            # drnol: jump to next highlighted item
-            self.jump_to_next_selected_node()
             return True
         if event.keyval == gtk.keysyms.comma:
             # drnol: select prev edge of focused node
@@ -2440,6 +2432,8 @@ class DotWindow(gtk.Window):
         else:
             dot_widget.set_selected(found_items)
 
+        win = widget.get_toplevel()
+        win.set_focus(win.uimanager.get_widget('/'))
     def set_filter(self, filter):
         self.widget.set_filter(filter)
 
@@ -2573,18 +2567,28 @@ class DotWindow(gtk.Window):
             pass
 
     def on_window_key_press_event(self, widget, event):
-        if self.file_entry.is_focus():
+        if event.keyval == gtk.keysyms.F2:
+            # drnol: jump to prev highlighted item
+            self.widget.jump_to_prev_selected_node()
+            return True
+        if event.keyval == gtk.keysyms.F3:
+            # drnol: jump to next highlighted item
+            self.widget.jump_to_next_selected_node()
+            return True
+
+        if self.file_entry.is_focus() or self.textentry.is_focus():
             return False
         if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
             self.on_prev(None)
             return True
-        if event.keyval == gtk.keysyms.n or event.keyval == gtk.keysyms.k:
+        elif event.keyval == gtk.keysyms.n or event.keyval == gtk.keysyms.k:
             self.on_next(None)
             return True
-        if event.keyval == gtk.keysyms.o:
+        elif event.keyval == gtk.keysyms.o:
             self.on_open(None)
             return True
-        return False
+        else:
+            return self.widget.on_key_press_event(widget, event)
 
 
 class OptionParser(optparse.OptionParser):
