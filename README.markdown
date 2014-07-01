@@ -120,7 +120,7 @@ If no input file is given then it will read the dot graph from the standard inpu
 Embedding
 ---------
 
-See included `example.py` script for an example of how to embedded _xdot.py_ into another application.
+See included `sample.py` script for an example of how to embedded _xdot.py_ into another application.
 
 [![Screenshot](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample.png)
 
