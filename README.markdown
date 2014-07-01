@@ -103,8 +103,8 @@ Command Line
       Escape                    halt animation
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
-      F2						prev highlighted item
-      F3						next highlighted item
+      F2                        prev highlighted item
+      F3                        next highlighted item
       ,                         select prev focused node's edge
       .                         select next focused node's edge
       p,j                       prev file
