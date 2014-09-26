@@ -473,7 +473,9 @@ class Graph(Shape):
         for shape in self.shapes:
             shape.draw(cr)
         for edge in self.edges:
-            edge.draw(cr, highlight=(edge in highlight_items))
+            should_highlight = any(e in highlight_items
+                                   for e in (edge, edge.src, edge.dst))
+            edge.draw(cr, highlight=should_highlight)
         for node in self.nodes:
             node.draw(cr, highlight=(node in highlight_items))
 
