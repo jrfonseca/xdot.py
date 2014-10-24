@@ -2114,10 +2114,7 @@ Shortcuts:
     win = DotWindow()
     win.connect('destroy', gtk.main_quit)
     win.set_filter(options.filter)
-    if len(args) == 0:
-        if not sys.stdin.isatty():
-            win.set_dotcode(sys.stdin.read())
-    else:
+    if len(args) >= 1:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
         else:
