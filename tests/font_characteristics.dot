@@ -1,0 +1,6 @@
+digraph G {
+    Foo[label=<<B>Hello</B><SUP>world</SUP>>]
+    Bar[label=<<U><I><S>Hel</S>lo</I></U><SUB><B>world</B></SUB>>]
+
+    Foo->Bar
+}

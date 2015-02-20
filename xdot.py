@@ -56,6 +56,14 @@ class Pen:
         self.linewidth = 1.0
         self.fontsize = 14.0
         self.fontname = "Times-Roman"
+        self.bold = False
+        self.italic = False
+        self.underline = False
+        self.superscript = False
+        self.subscript = False
+        self.strikethrough = False
+        self.overline = False
+
         self.dash = ()
 
     def copy(self):
@@ -102,9 +110,9 @@ class TextShape(Shape):
         self.pen = pen.copy()
         self.x = x
         self.y = y
-        self.j = j
-        self.w = w
-        self.t = t
+        self.j = j  # Centering
+        self.w = w  # width
+        self.t = t  # text
 
     def draw(self, cr, highlight=False):
 
@@ -129,8 +137,28 @@ class TextShape(Shape):
 
             # set font
             font = pango.FontDescription()
+            attrs = pango.AttrList()
+
+            # set font attributes
+            if self.pen.bold:
+                font.set_weight(pango.WEIGHT_BOLD)
+            if self.pen.italic:
+                font.set_style(pango.STYLE_ITALIC)
+            if self.pen.underline:
+                underline = pango.AttrUnderline(pango.UNDERLINE_SINGLE, 0, len(self.t))
+                attrs.insert(underline)
+            if self.pen.strikethrough:
+                st =  pango.AttrStrikethrough(True, 0, len(self.t))
+                attrs.insert(st)
+
+            layout.set_attributes(attrs)
+
+            fontsize = self.pen.fontsize
+            if self.pen.superscript or self.pen.subscript:
+                fontsize /= 1.5
+
             font.set_family(self.pen.fontname)
-            font.set_absolute_size(self.pen.fontsize*pango.SCALE)
+            font.set_absolute_size(fontsize*pango.SCALE)
             layout.set_font_description(font)
 
             # set text
@@ -146,6 +174,7 @@ class TextShape(Shape):
         width, height = layout.get_size()
         width = float(width)/pango.SCALE
         height = float(height)/pango.SCALE
+
         # we know the width that dot thinks this text should have
         # we do not necessarily have a font with the same metrics
         # scale it so that the text fits inside its box
@@ -166,7 +195,10 @@ class TextShape(Shape):
         else:
             assert 0
 
-        y = self.y - height + descent
+        if self.pen.superscript:
+            y = self.y - 1.5*height
+        else:
+            y = self.y - height + descent
 
         cr.move_to(x, y)
 
@@ -718,9 +750,15 @@ class XDotAttrParser:
         self.pen.fontname = name
 
     def handle_font_characteristics(self, flags):
-        # TODO
-        if flags != 0:
-            sys.stderr.write("warning: font characteristics not supported yet\n")
+        self.pen.bold = bool(flags & BOLD)
+        self.pen.italic = bool(flags & ITALIC)
+        self.pen.underline = bool(flags & UNDERLINE)
+        self.pen.superscript = bool(flags & SUPERSCRIPT)
+        self.pen.subscript = bool(flags & SUBSCRIPT)
+        self.pen.strikethrough = bool(flags & STRIKE_THROUGH)
+        self.pen.overline = bool(flags & OVERLINE)
+        if self.pen.overline:
+            sys.stderr.write('warning: overlined text not supported yet\n')
 
     def handle_text(self, x, y, j, w, t):
         self.shapes.append(TextShape(self.pen, x, y, j, w, t))
