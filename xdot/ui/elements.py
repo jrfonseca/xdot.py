@@ -92,6 +92,9 @@ class Shape:
                 ya, yb = min(ya, y0), max(yb, y1)
         return xa, ya, xb, yb
 
+    def get_text(self):
+        return None
+
 
 class TextShape(Shape):
 
@@ -210,6 +213,9 @@ class TextShape(Shape):
     def bounding(self):
         x, w, j = self.x, self.w, self.j
         return x - 0.5 * (1 + j) * w, -_inf, x + 0.5 * (1 - j) * w, _inf
+
+    def get_text(self):
+        return self.t
 
 
 class ImageShape(Shape):
@@ -493,6 +499,13 @@ class CompoundShape(Shape):
             if shape.search_text(regexp):
                 return True
         return False
+
+    def get_text(self):
+        for shape in self.shapes:
+            text = shape.get_text()
+            if text is not None:
+                return text
+        return None
 
 
 class Url(object):

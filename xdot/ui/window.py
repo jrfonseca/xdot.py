@@ -20,6 +20,7 @@ import re
 import subprocess
 import sys
 import time
+import operator
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -534,6 +535,10 @@ class DotWindow(Gtk.Window):
             <toolitem action="Zoom100"/>
             <separator/>
             <toolitem name="Find" action="Find"/>
+            <separator name="FindNextSeparator"/>
+            <toolitem action="FindNext"/>
+            <separator name="FindStatusSeparator"/>
+            <toolitem name="FindStatus" action="FindStatus"/>
         </toolbar>
     </ui>
     '''
@@ -577,6 +582,7 @@ class DotWindow(Gtk.Window):
             ('ZoomOut', Gtk.STOCK_ZOOM_OUT, None, None, None, self.dotwidget.on_zoom_out),
             ('ZoomFit', Gtk.STOCK_ZOOM_FIT, None, None, None, self.dotwidget.on_zoom_fit),
             ('Zoom100', Gtk.STOCK_ZOOM_100, None, None, None, self.dotwidget.on_zoom_100),
+            ('FindNext', Gtk.STOCK_GO_FORWARD, 'Next Result', None, 'Move to the next search result', self.on_find_next),
         ))
 
         self.back_action = Gtk.Action('Back', None, None, Gtk.STOCK_GO_BACK)
@@ -592,6 +598,10 @@ class DotWindow(Gtk.Window):
         find_action = FindMenuToolAction("Find", None,
                                          "Find a node by name", None)
         actiongroup.add_action(find_action)
+
+        findstatus_action = FindMenuToolAction("FindStatus", None,
+                                               "Number of results found", None)
+        actiongroup.add_action(findstatus_action)
 
         # Add the actiongroup to the uimanager
         uimanager.insert_action_group(actiongroup, 0)
@@ -619,6 +629,15 @@ class DotWindow(Gtk.Window):
         self.textentry.connect("activate", self.textentry_activate, self.textentry);
         self.textentry.connect("changed", self.textentry_changed, self.textentry);
 
+        uimanager.get_widget('/ToolBar/FindNextSeparator').set_draw(False)
+        uimanager.get_widget('/ToolBar/FindStatusSeparator').set_draw(False)
+        self.find_next_toolitem = uimanager.get_widget('/ToolBar/FindNext')
+        self.find_next_toolitem.set_sensitive(False)
+
+        self.find_count = Gtk.Label()
+        findstatus_toolitem = uimanager.get_widget('/ToolBar/FindStatus')
+        findstatus_toolitem.add(self.find_count)
+
         self.show_all()
 
     def find_text(self, entry_text):
@@ -628,9 +647,11 @@ class DotWindow(Gtk.Window):
         for element in dot_widget.graph.nodes + dot_widget.graph.edges:
             if element.search_text(regexp):
                 found_items.append(element)
-        return found_items
+        return sorted(found_items, key=operator.methodcaller('get_text'))
 
     def textentry_changed(self, widget, entry):
+        self.find_index = 0
+        self.find_next_toolitem.set_sensitive(False)
         entry_text = entry.get_text()
         dot_widget = self.dotwidget
         if not entry_text:
@@ -639,8 +660,14 @@ class DotWindow(Gtk.Window):
 
         found_items = self.find_text(entry_text)
         dot_widget.set_highlight(found_items, search=True)
+        if found_items:
+            self.find_count.set_label('%d nodes found' % len(found_items))
+        else:
+            self.find_count.set_label('')
 
     def textentry_activate(self, widget, entry):
+        self.find_index = 0
+        self.find_next_toolitem.set_sensitive(False)
         entry_text = entry.get_text()
         dot_widget = self.dotwidget
         if not entry_text:
@@ -649,8 +676,9 @@ class DotWindow(Gtk.Window):
 
         found_items = self.find_text(entry_text)
         dot_widget.set_highlight(found_items, search=True)
-        if(len(found_items) == 1):
+        if found_items:
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
+        self.find_next_toolitem.set_sensitive(len(found_items) > 1)
 
     def set_filter(self, filter):
         self.dotwidget.set_filter(filter)
@@ -716,6 +744,15 @@ class DotWindow(Gtk.Window):
         dlg.set_title(self.base_title)
         dlg.run()
         dlg.destroy()
+
+    def on_find_next(self, action):
+        self.find_index += 1
+        entry_text = self.textentry.get_text()
+        # Maybe storing the search result would be better
+        found_items = self.find_text(entry_text)
+        found_item = found_items[self.find_index]
+        self.dotwidget.animate_to(found_item.x, found_item.y)
+        self.find_next_toolitem.set_sensitive(len(found_items) > self.find_index + 1)
 
     def on_history(self, action, has_back, has_forward):
         self.back_action.set_sensitive(has_back)
