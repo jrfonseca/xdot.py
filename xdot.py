@@ -29,6 +29,7 @@ import colorsys
 import time
 import re
 import optparse
+import operator
 
 import gobject
 import gtk
@@ -99,6 +100,9 @@ class Shape:
 
     def search_text(self, regexp):
         return False
+
+    def get_text(self):
+        return None
 
 
 class TextShape(Shape):
@@ -223,6 +227,9 @@ class TextShape(Shape):
 
     def search_text(self, regexp):
         return regexp.search(self.t) is not None
+
+    def get_text(self):
+        return self.t
 
 
 class ImageShape(Shape):
@@ -366,6 +373,13 @@ class CompoundShape(Shape):
             if shape.search_text(regexp):
                 return True
         return False
+
+    def get_text(self):
+        for shape in self.shapes:
+            text = shape.get_text()
+            if text is not None:
+                return text
+        return None
 
 
 class Url(object):
@@ -1943,6 +1957,10 @@ class DotWindow(gtk.Window):
             <toolitem action="Zoom100"/>
             <separator/>
             <toolitem name="Find" action="Find"/>
+            <separator name="FindNextSeparator"/>
+            <toolitem action="FindNext"/>
+            <separator name="FindStatusSeparator"/>
+            <toolitem name="FindStatus" action="FindStatus"/>
         </toolbar>
     </ui>
     '''
@@ -1983,11 +2001,16 @@ class DotWindow(gtk.Window):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+            ('FindNext', gtk.STOCK_GO_FORWARD, 'Next Result', None, 'Move to the next search result', self.on_find_next),
         ))
 
         find_action = FindMenuToolAction("Find", None,
                                           "Find a node by name", None)
         actiongroup.add_action(find_action)
+
+        findstatus_action = FindMenuToolAction("FindStatus", None,
+                                          "Number of results found", None)
+        actiongroup.add_action(findstatus_action)
 
         # Add the actiongroup to the uimanager
         uimanager.insert_action_group(actiongroup, 0)
@@ -2015,6 +2038,15 @@ class DotWindow(gtk.Window):
         self.textentry.connect ("activate", self.textentry_activate, self.textentry);
         self.textentry.connect ("changed", self.textentry_changed, self.textentry);
 
+        uimanager.get_widget('/ToolBar/FindNextSeparator').set_draw(False)
+        uimanager.get_widget('/ToolBar/FindStatusSeparator').set_draw(False)
+        self.find_next_toolitem = uimanager.get_widget('/ToolBar/FindNext')
+        self.find_next_toolitem.set_sensitive(False)
+
+        self.find_count = gtk.Label()
+        findstatus_toolitem = uimanager.get_widget('/ToolBar/FindStatus')
+        findstatus_toolitem.add(self.find_count)
+
         self.show_all()
 
     def find_text(self, entry_text):
@@ -2024,19 +2056,29 @@ class DotWindow(gtk.Window):
         for node in dot_widget.graph.nodes:
             if node.search_text(regexp):
                 found_items.append(node)
-        return found_items
+        return sorted(found_items, key=operator.methodcaller('get_text'))
 
     def textentry_changed(self, widget, entry):
+        self.find_index = 0
+        self.find_next_toolitem.set_sensitive(False)
         entry_text = entry.get_text()
         dot_widget = self.widget        
         if not entry_text:
             dot_widget.set_highlight(None)
+            self.find_count.set_label('')
             return
         
         found_items = self.find_text(entry_text)
         dot_widget.set_highlight(found_items)
+        if found_items:
+            self.find_count.set_label('%d nodes found' % len(found_items))
+        else:
+            self.find_count.set_label('')
+
 
     def textentry_activate(self, widget, entry):
+        self.find_index = 0
+        self.find_next_toolitem.set_sensitive(False)
         entry_text = entry.get_text()
         dot_widget = self.widget        
         if not entry_text:
@@ -2045,8 +2087,9 @@ class DotWindow(gtk.Window):
         
         found_items = self.find_text(entry_text)
         dot_widget.set_highlight(found_items)
-        if(len(found_items) == 1):
+        if found_items:
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
+        self.find_next_toolitem.set_sensitive(len(found_items) > 1)
 
     def set_filter(self, filter):
         self.widget.set_filter(filter)
@@ -2107,6 +2150,14 @@ class DotWindow(gtk.Window):
 
     def on_reload(self, action):
         self.widget.reload()
+
+    def on_find_next(self, action):
+        self.find_index += 1
+        entry_text = self.textentry.get_text()
+        # Maybe storing the search result would be better
+        found_items = self.find_text(entry_text)
+        self.widget.animate_to(found_items[self.find_index].x, found_items[self.find_index].y)
+        self.find_next_toolitem.set_sensitive(len(found_items) > self.find_index + 1)
 
 
 class OptionParser(optparse.OptionParser):
