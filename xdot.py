@@ -2037,9 +2037,9 @@ class DotWindow(Gtk.Window):
         found_items = []
         dot_widget = self.dotwidget
         regexp = re.compile(entry_text)
-        for node in dot_widget.graph.nodes:
-            if node.search_text(regexp):
-                found_items.append(node)
+        for element in dot_widget.graph.nodes + dot_widget.graph.edges:
+            if element.search_text(regexp):
+                found_items.append(element)
         return found_items
 
     def textentry_changed(self, widget, entry):
