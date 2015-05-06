@@ -1546,6 +1546,7 @@ class DotWidget(gtk.DrawingArea):
         self.drag_action = NullAction(self)
         self.presstime = None
         self.highlight = None
+        self.highlight_search = False
 
     def set_filter(self, filter):
         self.filter = filter
@@ -1661,7 +1662,13 @@ class DotWidget(gtk.DrawingArea):
         self.y = y
         self.queue_draw()
 
-    def set_highlight(self, items):
+    def set_highlight(self, items, search=False):
+        # Enable or disable search highlight
+        if search:
+            self.highlight_search = items is not None
+        # Ignore cursor highlight while searching
+        if self.highlight_search and not search:
+            return
         if self.highlight != items:
             self.highlight = items
             self.queue_draw()
@@ -2031,21 +2038,21 @@ class DotWindow(gtk.Window):
         entry_text = entry.get_text()
         dot_widget = self.widget        
         if not entry_text:
-            dot_widget.set_highlight(None)
+            dot_widget.set_highlight(None, search=True)
             return
         
         found_items = self.find_text(entry_text)
-        dot_widget.set_highlight(found_items)
+        dot_widget.set_highlight(found_items, search=True)
 
     def textentry_activate(self, widget, entry):
         entry_text = entry.get_text()
         dot_widget = self.widget        
         if not entry_text:
-            dot_widget.set_highlight(None)
+            dot_widget.set_highlight(None, search=True)
             return;
         
         found_items = self.find_text(entry_text)
-        dot_widget.set_highlight(found_items)
+        dot_widget.set_highlight(found_items, search=True)
         if(len(found_items) == 1):
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
 
