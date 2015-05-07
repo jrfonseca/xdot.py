@@ -1,5 +1,6 @@
 .*.sw?
 *.pyc
 *.egg-info
+.project
 build
 dist

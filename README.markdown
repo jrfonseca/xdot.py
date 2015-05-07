@@ -103,6 +103,17 @@ Command Line
       Escape                    halt animation
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
+      F2                        prev highlighted item
+      F3                        next highlighted item
+      ,                         select prev focused node's edge
+      .                         select next focused node's edge
+      p,j                       prev file
+      n,k                       next file
+      o                         browse file
+      Enter                     follow selected edge
+      Ctrl-click                display shortest path (retargetable)
+      Ctrl-shift-click          display reverse shortest path (retargetable)
+      right click               dot url open ([URL="dots://file1;file2;..."]) (Linux only)
 
 If no input file is given then it will read the dot graph from the standard input.
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 #
 # Copyright 2008 Jose Fonseca
 #
@@ -45,6 +45,9 @@ import pangocairo
 # - http://mirageiv.berlios.de/
 # - http://comix.sourceforge.net/
 
+HOVER_PEN=1
+SELECTED_PEN=2
+PATH_PEN=3
 
 class Pen:
     """Store pen attributes."""
@@ -72,12 +75,27 @@ class Pen:
         pen.__dict__ = self.__dict__.copy()
         return pen
 
-    def highlighted(self):
+    # drnol: pen type extends to hover, selected, path
+    def hover(self):
         pen = self.copy()
+        pen.linewidth = 2.0
         pen.color = (1, 0, 0, 1)
         pen.fillcolor = (1, .8, .8, 1)
         return pen
 
+    def selected(self):
+        pen = self.copy()
+        pen.linewidth = 2.0
+        pen.color = (0, 1, 0, 1)
+        pen.fillcolor = (1, .8, .8, 1)
+        return pen
+
+    def path(self):
+        pen = self.copy()
+        pen.linewidth = 3.0
+        pen.color = (1, 0, 1, 1)
+        pen.fillcolor = (1, .8, .8, 1)
+        return pen
 
 class Shape:
     """Abstract base class for all the drawing shapes."""
@@ -85,15 +103,24 @@ class Shape:
     def __init__(self):
         pass
 
-    def draw(self, cr, highlight=False):
+    def draw(self, cr, pen_type=None):
         """Draw this shape with the given cairo context"""
         raise NotImplementedError
 
-    def select_pen(self, highlight):
-        if highlight:
-            if not hasattr(self, 'highlight_pen'):
-                self.highlight_pen = self.pen.highlighted()
-            return self.highlight_pen
+    # drnol: pen type extends to hover, selected, path
+    def select_pen(self, pen_type):
+        if pen_type == HOVER_PEN:
+            if not hasattr(self, 'hover_pen'):
+                self.hover_pen = self.pen.hover()
+            return self.hover_pen
+        elif pen_type == SELECTED_PEN:
+            if not hasattr(self, 'selected_pen'):
+                self.selected_pen = self.pen.selected()
+            return self.selected_pen
+        elif pen_type == PATH_PEN:
+            if not hasattr(self, 'path_pen'):
+                self.path_pen = self.pen.path()
+            return self.path_pen
         else:
             return self.pen
 
@@ -114,7 +141,8 @@ class TextShape(Shape):
         self.w = w  # width
         self.t = t  # text
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen_type
+    def draw(self, cr, pen_type=None):
 
         try:
             layout = self.layout
@@ -204,7 +232,8 @@ class TextShape(Shape):
 
         cr.save()
         cr.scale(f, f)
-        cr.set_source_rgba(*self.select_pen(highlight).color)
+        # drnol: change highlight flag to pen_type
+        cr.set_source_rgba(*self.select_pen(pen_type).color)
         cr.show_layout(layout)
         cr.restore()
 
@@ -236,7 +265,8 @@ class ImageShape(Shape):
         self.h = h
         self.path = path
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen_type
+    def draw(self, cr, pen_type=None):
         cr2 = gtk.gdk.CairoContext(cr)
         pixbuf = gtk.gdk.pixbuf_new_from_file(self.path)
         sx = float(self.w)/float(pixbuf.get_width())
@@ -260,14 +290,16 @@ class EllipseShape(Shape):
         self.h = h
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen_type
+    def draw(self, cr, pen_type=None):
         cr.save()
         cr.translate(self.x0, self.y0)
         cr.scale(self.w, self.h)
         cr.move_to(1.0, 0.0)
         cr.arc(0.0, 0.0, 1.0, 0, 2.0*math.pi)
         cr.restore()
-        pen = self.select_pen(highlight)
+        # drnol: change highlight flag to pen_type
+        pen = self.select_pen(pen_type)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill()
@@ -286,13 +318,15 @@ class PolygonShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen_type
+    def draw(self, cr, pen_type=None):
         x0, y0 = self.points[-1]
         cr.move_to(x0, y0)
         for x, y in self.points:
             cr.line_to(x, y)
         cr.close_path()
-        pen = self.select_pen(highlight)
+        # drnol: change highlight flag to pen_type
+        pen = self.select_pen(pen_type)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill_preserve()
@@ -311,12 +345,14 @@ class LineShape(Shape):
         self.pen = pen.copy()
         self.points = points
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen_type
+    def draw(self, cr, pen_type=None):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for x1, y1 in self.points[1:]:
             cr.line_to(x1, y1)
-        pen = self.select_pen(highlight)
+        # drnol: change highlight flag to pen_type
+        pen = self.select_pen(pen_type)
         cr.set_dash(pen.dash)
         cr.set_line_width(pen.linewidth)
         cr.set_source_rgba(*pen.color)
@@ -331,7 +367,8 @@ class BezierShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen_type
+    def draw(self, cr, pen_type=None):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for i in xrange(1, len(self.points), 3):
@@ -339,7 +376,8 @@ class BezierShape(Shape):
             x2, y2 = self.points[i + 1]
             x3, y3 = self.points[i + 2]
             cr.curve_to(x1, y1, x2, y2, x3, y3)
-        pen = self.select_pen(highlight)
+        # drnol: change highlight flag to pen_type
+        pen = self.select_pen(pen_type)
         if self.filled:
             cr.set_source_rgba(*pen.fillcolor)
             cr.fill_preserve()
@@ -357,9 +395,10 @@ class CompoundShape(Shape):
         Shape.__init__(self)
         self.shapes = shapes
 
-    def draw(self, cr, highlight=False):
+    # drnol: change highlight flag to pen
+    def draw(self, cr, pen_type=None):
         for shape in self.shapes:
-            shape.draw(cr, highlight=highlight)
+            shape.draw(cr, pen_type=pen_type)
 
     def search_text(self, regexp):
         for shape in self.shapes:
@@ -370,23 +409,23 @@ class CompoundShape(Shape):
 
 class Url(object):
 
-    def __init__(self, item, url, highlight=None):
+    def __init__(self, item, url, hover=None):
         self.item = item
         self.url = url
-        if highlight is None:
-            highlight = set([item])
-        self.highlight = highlight
+        if hover is None:
+            hover = set([item])
+        self.hover = hover
 
 
 class Jump(object):
 
-    def __init__(self, item, x, y, highlight=None):
+    def __init__(self, item, x, y, hover=None):
         self.item = item
         self.x = x
         self.y = y
-        if highlight is None:
-            highlight = set([item])
-        self.highlight = highlight
+        if hover is None:
+            hover = set([item])
+        self.hover = hover
 
 
 class Element(CompoundShape):
@@ -448,10 +487,11 @@ def square_distance(x1, y1, x2, y2):
 
 class Edge(Element):
 
-    def __init__(self, src, dst, points, shapes):
+    def __init__(self, src, dst, points, shapes, dir):
         Element.__init__(self, shapes)
         self.src = src
         self.dst = dst
+        self.dir = dir
         self.points = points
 
     RADIUS = 10
@@ -471,9 +511,9 @@ class Edge(Element):
 
     def get_jump(self, x, y):
         if self.is_inside_begin(x, y):
-            return Jump(self, self.dst.x, self.dst.y, highlight=set([self, self.dst]))
+            return Jump(self, self.dst.x, self.dst.y, hover=set([self, self.dst]))
         if self.is_inside_end(x, y):
-            return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
+            return Jump(self, self.src.x, self.src.y, hover=set([self, self.src]))
         return None
 
     def __repr__(self):
@@ -490,13 +530,35 @@ class Graph(Shape):
         self.shapes = shapes
         self.nodes = nodes
         self.edges = edges
+        self.build_edge_map() # drnol: build edge lookup map
+
+    # drnol: build edge lookup map
+    def build_edge_map(self):
+        self.edgemap = {}
+        for edge in self.edges:
+            # add src
+            if self.edgemap.has_key(edge.src):
+                self.edgemap[edge.src].append(edge)
+            else:
+                self.edgemap[edge.src] = [edge]
+            # add dst
+            if self.edgemap.has_key(edge.dst):
+                self.edgemap[edge.dst].append(edge)
+            else:
+                self.edgemap[edge.dst] = [edge]
 
     def get_size(self):
         return self.width, self.height
 
-    def draw(self, cr, highlight_items=None):
-        if highlight_items is None:
-            highlight_items = ()
+    # drnol: highlight_items split to (hover...,selected...,path...)
+    def draw(self, cr, hover_items=None, selected_items=None, path_items=None):
+        if hover_items is None:
+            hover_items = ()
+        if selected_items is None:
+            selected_items = ()
+        if path_items is None:
+            path_items = ()
+
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
 
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
@@ -504,10 +566,26 @@ class Graph(Shape):
 
         for shape in self.shapes:
             shape.draw(cr)
+
         for edge in self.edges:
-            edge.draw(cr, highlight=(edge in highlight_items))
+            if edge in hover_items:
+                edge.draw(cr,HOVER_PEN)
+            elif edge in selected_items:
+                edge.draw(cr,SELECTED_PEN)
+            elif edge in path_items:
+                edge.draw(cr,PATH_PEN)
+            else:
+                edge.draw(cr)
+
         for node in self.nodes:
-            node.draw(cr, highlight=(node in highlight_items))
+            if node in hover_items:
+                node.draw(cr,HOVER_PEN)
+            elif node in selected_items:
+                node.draw(cr,SELECTED_PEN)
+            elif node in path_items:
+                node.draw(cr,PATH_PEN)
+            else:
+                node.draw(cr)
 
     def get_element(self, x, y):
         for node in self.nodes:
@@ -535,6 +613,61 @@ class Graph(Shape):
                 return jump
         return None
 
+    # drnol: get ui shortest path
+    # use directed graph
+    def get_shortest_element_path(self, start, end):
+        node_path = self.find_shortest_node_path(start, end)
+
+        if (node_path != None) and (len(node_path)>0):
+            path = [node_path[0]]
+            for i in range(0, (len(node_path)-1)):
+                src = node_path[i]
+                dst = node_path[i+1]
+                path.append(self.lookup_bidirection_edge(src,dst))
+                path.append(dst)
+
+            return path
+        else:
+            return None
+
+    # drnol: edge lookup by src,dst
+    def lookup_edge(self,src,dst):
+        for edge in self.edgemap[src]:
+            if edge.dst == dst:
+                return edge
+        return None
+
+    def lookup_bidirection_edge(self,src,dst):
+        edge = self.lookup_edge(src, dst)
+        if not edge:
+            edge = self.lookup_edge(dst, src)
+        return edge
+
+    # drnol: simple shortest path calculator
+    # just get node path
+    # TODO: must be optimize
+    def find_shortest_node_path(self, start, end, path=[]):
+        path = path + [start]
+
+        if start == end:
+            return path
+
+        if not self.edgemap.has_key(start):
+            return None
+
+        shortest = None
+        for edge in self.edgemap[start]:
+            if (edge.src == start) and (edge.dst not in path):
+                newpath = self.find_shortest_node_path(edge.dst, end, path)
+                if newpath:
+                    if not shortest or len(newpath) < len(shortest):
+                        shortest = newpath
+            elif (edge.dir=="none") and (edge.dst == start) and (edge.src not in path): # bi-direction support
+                newpath = self.find_shortest_node_path(edge.src, end, path)
+                if newpath:
+                    if not shortest or len(newpath) < len(shortest):
+                        shortest = newpath
+        return shortest
 
 BOLD = 1
 ITALIC = 2
@@ -555,7 +688,7 @@ class XDotAttrParser:
         self.parser = parser
         self.buf = buf
         self.pos = 0
-        
+
         self.pen = Pen()
         self.shapes = []
 
@@ -649,7 +782,7 @@ class XDotAttrParser:
             b = b*s
             a = 1.0
             return r, g, b, a
-                
+
         sys.stderr.write("warning: unknown color '%s'\n" % c)
         return None
 
@@ -724,7 +857,7 @@ class XDotAttrParser:
                 sys.exit(1)
 
         return self.shapes
-    
+
     def transform(self, x, y):
         return self.parser.transform(x, y)
 
@@ -802,7 +935,7 @@ class ParseError(Exception):
 
     def __str__(self):
         return ':'.join([str(part) for part in (self.filename, self.line, self.col, self.msg) if part != None])
-        
+
 
 class Scanner:
     """Stateless scanner."""
@@ -941,9 +1074,9 @@ class Parser:
     def match(self, type):
         if self.lookahead.type != type:
             raise ParseError(
-                msg = 'unexpected token %r' % self.lookahead.text, 
-                filename = self.lexer.filename, 
-                line = self.lookahead.line, 
+                msg = 'unexpected token %r' % self.lookahead.text,
+                filename = self.lexer.filename,
+                line = self.lookahead.line,
                 col = self.lookahead.col)
 
     def skip(self, type):
@@ -1046,7 +1179,7 @@ class DotLexer(Lexer):
             text = text.replace('\\\r\n', '')
             text = text.replace('\\\r', '')
             text = text.replace('\\\n', '')
-            
+
             # quotes
             text = text.replace('\\"', '"')
 
@@ -1190,7 +1323,7 @@ class XDotParser(DotParser):
     def __init__(self, xdotcode):
         lexer = DotLexer(buf = xdotcode)
         DotParser.__init__(self, lexer)
-        
+
         self.nodes = []
         self.edges = []
         self.shapes = []
@@ -1227,7 +1360,7 @@ class XDotParser(DotParser):
                 self.height = max(ymax - ymin, 1)
 
                 self.top_graph = False
-        
+
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
             if attr in attrs:
                 parser = XDotAttrParser(self, attrs[attr])
@@ -1258,7 +1391,12 @@ class XDotParser(DotParser):
             pos = attrs['pos']
         except KeyError:
             return
-        
+
+        try:
+            dir = attrs['dir']
+        except:
+            dir=""
+
         points = self.parse_edge_pos(pos)
         shapes = []
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
@@ -1268,7 +1406,7 @@ class XDotParser(DotParser):
         if shapes:
             src = self.node_by_name[src_id]
             dst = self.node_by_name[dst_id]
-            self.edges.append(Edge(src, dst, points, shapes))
+            self.edges.append(Edge(src, dst, points, shapes, dir))
 
     def parse(self):
         DotParser.parse(self)
@@ -1438,17 +1576,23 @@ class NullAction(DragAction):
             x, y, state = event.window.get_pointer()
         else:
             x, y, state = event.x, event.y, event.state
+
+        # drnol: skip when shift is pressed
+        if state & gtk.gdk.CONTROL_MASK:
+            return
+
         dot_widget = self.dot_widget
         item = dot_widget.get_url(x, y)
         if item is None:
             item = dot_widget.get_jump(x, y)
         if item is not None:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.HAND2))
-            dot_widget.set_highlight(item.highlight)
+            # drnol: now hover instead highlight
+            dot_widget.set_hover(item.hover)
         else:
             dot_widget.window.set_cursor(gtk.gdk.Cursor(gtk.gdk.ARROW))
-            dot_widget.set_highlight(None)
-
+            # drnol: now hover instead highlight
+            dot_widget.set_hover(None)
 
 class PanAction(DragAction):
 
@@ -1513,7 +1657,9 @@ class DotWidget(gtk.DrawingArea):
 
     __gsignals__ = {
         'expose-event': 'override',
-        'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
+        'clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event)),
+        # drnol: url right click action
+        'url_right_clicked' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gtk.gdk.Event))
     }
 
     filter = 'dot'
@@ -1534,7 +1680,6 @@ class DotWidget(gtk.DrawingArea):
         self.connect("scroll-event", self.on_area_scroll_event)
         self.connect("size-allocate", self.on_area_size_allocate)
 
-        self.connect('key-press-event', self.on_key_press_event)
         self.last_mtime = None
 
         gobject.timeout_add(1000, self.update)
@@ -1545,7 +1690,21 @@ class DotWidget(gtk.DrawingArea):
         self.animation = NoAnimation(self)
         self.drag_action = NullAction(self)
         self.presstime = None
-        self.highlight = None
+
+        self.doc_init()
+
+
+    # drnol: doc init for multiple open
+    def doc_init(self):
+        # drnol: selections and path related variables
+        self.focused_index = None
+        self.pivot_node = None
+        self.selected_edge_index = None
+
+        # drnol: 3 type highlights
+        self.hover = None
+        self.selected = None
+        self.path = None
 
     def set_filter(self, filter):
         self.filter = filter
@@ -1589,6 +1748,8 @@ class DotWidget(gtk.DrawingArea):
             return False
         try:
             self.set_xdotcode(xdotcode)
+            # drnol: reset focus/selection state
+            self.doc_init()
         except ParseError as ex:
             dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                        message_format=str(ex),
@@ -1646,7 +1807,7 @@ class DotWidget(gtk.DrawingArea):
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
 
-        self.graph.draw(cr, highlight_items=self.highlight)
+        self.graph.draw(cr, hover_items=self.hover, selected_items=self.selected, path_items=self.path)
         cr.restore()
 
         self.drag_action.draw(cr)
@@ -1661,10 +1822,55 @@ class DotWidget(gtk.DrawingArea):
         self.y = y
         self.queue_draw()
 
-    def set_highlight(self, items):
-        if self.highlight != items:
-            self.highlight = items
+    # drnol: highlight changed to hover
+    def set_hover(self, items):
+        if self.hover != items:
+            self.hover = items
             self.queue_draw()
+
+    # drnol: select node
+    def set_pivot_node(self, node):
+        self.pivot_node = node
+
+        # reset focus/edge selection/path
+        if self.pivot_node != None:
+            self.focused_index = None
+            self.selected_edge_index = None
+            self.path = None
+
+        # highlight
+        if node != None:
+            self.selected = [node]
+        else:
+            self.selected = None
+
+        self.queue_draw()
+
+    # drnol: select edge
+    def set_selected_edge(self, edge):
+        if self.selected_edge_index != edge:
+            if self.pivot_node == edge.src:
+                self.selected = [edge.src, edge, edge.dst]
+            elif self.pivot_node == edge.dst:
+                self.selected = [edge.dst, edge, edge.src]
+            else:
+                self.set_pivot_node(edge.src)
+                self.selected = [edge.src, edge, edge.dst]
+        self.queue_draw()
+
+    # drnol: renew selected items
+    def set_selected(self, items):
+        self.focused_index = None
+        self.pivot_node = None
+        self.selected_edge_index = None
+        if self.selected != items:
+            self.selected = items
+            self.queue_draw()
+
+    # drnol: set path
+    def set_path(self, path):
+        self.path = path
+        self.queue_draw()
 
     def zoom_image(self, zoom_ratio, center=False, pos=None):
         # Constrain zoom ratio to a sane range to prevent numeric instability.
@@ -1780,7 +1986,135 @@ class DotWidget(gtk.DrawingArea):
         if event.keyval == gtk.keysyms.p:
             self.on_print()
             return True
+        if event.keyval == gtk.keysyms.comma:
+            # drnol: select prev edge of focused node
+            self.select_prev_edge_of_pivot_node()
+            return True
+        if event.keyval == gtk.keysyms.period:
+            # drnol: select next edge of focused node
+            self.select_next_edge_of_pivot_node()
+            return True
+        if event.keyval == gtk.keysyms.Return:
+            # drnol: follow selected edge
+            self.follow_selected_edge()
+            return True
         return False
+
+    # drnol: jump to prev selected item
+    def jump_to_prev_selected_node(self):
+        list = self.get_traversal_list()
+        if list:
+            if (self.focused_index == None) or (self.focused_index == 0):
+                self.focused_index = len(list)-1
+            else:
+                self.focused_index = self.focused_index-1
+            element = list[self.focused_index]
+            if isinstance(element,Node):
+                self.focus_node(element)
+            else:
+                self.jump_to_prev_selected_node() # skip edge
+
+    # drnol: jump to next selected item
+    def jump_to_next_selected_node(self):
+        list = self.get_traversal_list()
+        if list != None:
+            if self.focused_index == None:
+                self.focused_index = 0
+            else:
+                self.focused_index = (self.focused_index+1) % len(list)
+            element = list[self.focused_index]
+            if isinstance(element,Node):
+                self.focus_node(element)
+            else:
+                self.jump_to_next_selected_node() # skip edge
+
+    # drnol: if path is displayed then traversal list is path otherwise selected nodes
+    def get_traversal_list(self):
+        if self.path != None:
+            for element in self.path:
+                if isinstance(element,Node):
+                    return self.path
+        else:
+            for element in self.selected:
+                if isinstance(element,Node):
+                    return self.selected
+        return None
+
+    # drnol: focus node
+    def focus_node(self, node):
+        self.selected_edge = None
+        self.pivot_node = node
+        if self.path != None:
+            self.selected=[self.pivot_node]
+            self.queue_draw()
+        self.animate_to(node.x, node.y)
+
+    # drnol: focus node by coordinate
+    def focus_node_at(self, x, y):
+        elt = self.get_element(x, y)
+        if (elt != None) and (isinstance(elt,Node)):
+            self.focused_index = 0
+            self.pivot_node = elt
+
+    # drnol: select prev edge of focused node
+    def select_prev_edge_of_pivot_node(self):
+        if self.pivot_node != None:
+            if self.graph.edgemap.has_key(self.pivot_node):
+                edges = self.graph.edgemap[self.pivot_node]
+                # if there is more than one edge in the selected node
+                if len(edges) > 0:
+                    if (self.selected_edge_index == None) or (self.selected_edge_index <= 0):
+                        self.selected_edge_index = len(edges)-1
+                    else:
+                        self.selected_edge_index = self.selected_edge_index-1
+                    edge = edges[self.selected_edge_index]
+                    self.set_selected_edge(edge)
+
+    # drnol: select next edge of focused node
+    def select_next_edge_of_pivot_node(self):
+        if self.pivot_node != None:
+            if self.graph.edgemap.has_key(self.pivot_node):
+                edges = self.graph.edgemap[self.pivot_node]
+                # if there is more than one edge in the selected node
+                if len(edges) > 0:
+                    if self.selected_edge_index == None:
+                        self.selected_edge_index = 0
+                    else:
+                        self.selected_edge_index = (self.selected_edge_index+1) % len(edges)
+                    edge = edges[self.selected_edge_index]
+                    self.set_selected_edge(edge)
+
+    #drnol: follow selected edge
+    def follow_selected_edge(self):
+        if (self.pivot_node != None) and (self.selected_edge_index != None):
+            edges = self.graph.edgemap[self.pivot_node]
+            edge = edges[self.selected_edge_index]
+
+            # follow to opposite node
+            if edge.src == self.pivot_node:
+                target = edge.dst
+            else:
+                target = edge.src
+
+            # jump to selected node
+            self.focus_node(target)
+
+            # automatically select one of other edges
+            self.selected_edge_index, new_edge = self.try_find_other_edge_index(edge)
+            self.set_selected_edge(new_edge)
+
+    #drnol: try finding the other edge
+    def try_find_other_edge_index(self, edge):
+        edges = self.graph.edgemap[self.pivot_node]
+
+        edge_index = 0
+        new_edge = edges[0]
+        for i in range(1, len(edges)):
+            if edges[i] != edge:
+                edge_index = i
+                new_edge = edges[i]
+
+        return edge_index, new_edge
 
     print_settings = None
     def on_print(self, action=None):
@@ -1809,7 +2143,7 @@ class DotWidget(gtk.DrawingArea):
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
 
-        self.graph.draw(cr, highlight_items=self.highlight)
+        self.graph.draw(cr, hover_items=self.hover, selected_items=self.selected, path_items=self.path)
 
     def get_drag_action(self, event):
         state = event.state
@@ -1851,6 +2185,57 @@ class DotWidget(gtk.DrawingArea):
         (click on empty space)."""
         return False
 
+    # drnol: display shortest path
+    # if there is one selected node A -> path between A and just before ctrl-clicked node B
+    # if there are previously displayed path and pivot node A -> path between A and just before ctrl-clicked node B
+    def show_path(self, end_node, reverse=False):
+        # start node check
+        if self.pivot_node == None:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                        message_format="You must select start node.",
+                        buttons=gtk.BUTTONS_OK)
+            dlg.set_title("Path Selection Error!")
+            dlg.run()
+            dlg.destroy()
+            return
+
+        self.focused_index = 0
+        self.selected = [self.pivot_node]
+
+        # build path
+        if reverse:
+            self.build_path(end_node, self.pivot_node)
+        else:
+            self.build_path(self.pivot_node, end_node)
+
+        if not self.path:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
+                  message_format="There is no path",
+                  buttons=gtk.BUTTONS_OK)
+            dlg.set_title("Path Info")
+            dlg.run()
+            dlg.destroy()
+        else:
+            # display path
+            self.set_path(self.path)
+            self.queue_draw()
+
+    def build_path(self, start, end):
+        self.path = self.graph.get_shortest_element_path(start, end)
+
+    # drnol: url right click implementation
+    def do_url_right_clicked(self, url, event):
+        # drnol: open new dot files directives
+        # currently depend on operating system
+        if (url.index("dots://")==0) and (os.uname()[0]=="Linux"):
+            dots = url[7:].split(';')
+            dirname = os.path.dirname(self.openfilename)
+            if dirname!="":
+                dirname=dirname+"/"
+            for dot in dots:
+                subprocess.Popen([sys.argv[0], dirname+dot])
+        return
+
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
         self.drag_action = NullAction(self)
@@ -1864,12 +2249,29 @@ class DotWidget(gtk.DrawingArea):
                 url = self.get_url(x, y)
                 if url is not None:
                     self.emit('clicked', unicode(url.url), event)
-                else:
-                    jump = self.get_jump(x, y)
-                    if jump is not None:
-                        self.animate_to(jump.x, jump.y)
+                # drnol: disable url node's skipping action because of node selection
+                # else:
+                jump = self.get_jump(x, y)
+                if jump is not None:
+                    self.animate_to(jump.x, jump.y)
 
+                    # drnol: node selection
+                    element = self.get_element(x, y)
+                    if isinstance(element, Node):
+                        if event.state & gtk.gdk.CONTROL_MASK:
+                            if event.state & gtk.gdk.SHIFT_MASK:
+                                self.show_path(element, True) # reverse path
+                            else:
+                                self.show_path(element) # normal path
+                        else: # start node selection
+                            self.set_pivot_node(element)
+                    else: # edge selection
+                        self.set_selected_edge(element)
                 return True
+            elif event.button == 3:
+                url = self.get_url(x, y)
+                if url is not None:
+                    self.emit('url_right_clicked', unicode(url.url), event)
 
         if event.button == 1 or event.button == 2:
             return True
@@ -1943,6 +2345,10 @@ class DotWindow(gtk.Window):
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
             <separator/>
+            <toolitem action="Previous"/>
+            <toolitem action="Next"/>
+            <toolitem action="Quit"/>
+            <separator/>
             <toolitem name="Find" action="Find"/>
         </toolbar>
     </ui>
@@ -1964,6 +2370,8 @@ class DotWindow(gtk.Window):
 
         self.widget = widget or DotWidget()
 
+        self.connect('key-press-event', self.on_window_key_press_event)
+
         # Create a UIManager instance
         uimanager = self.uimanager = gtk.UIManager()
 
@@ -1984,6 +2392,9 @@ class DotWindow(gtk.Window):
             ('ZoomOut', gtk.STOCK_ZOOM_OUT, None, None, None, self.widget.on_zoom_out),
             ('ZoomFit', gtk.STOCK_ZOOM_FIT, None, None, None, self.widget.on_zoom_fit),
             ('Zoom100', gtk.STOCK_ZOOM_100, None, None, None, self.widget.on_zoom_100),
+            ('Previous', gtk.STOCK_GO_BACK, None, None, None, self.on_prev),
+            ('Next', gtk.STOCK_GO_FORWARD, None, None, None, self.on_next),
+            ('Quit', gtk.STOCK_QUIT, None, None, None, self.on_quit),
         ))
 
         find_action = FindMenuToolAction("Find", None,
@@ -1999,6 +2410,14 @@ class DotWindow(gtk.Window):
         # Create a Toolbar
         toolbar = uimanager.get_widget('/ToolBar')
         vbox.pack_start(toolbar, False)
+
+        # Create a text entry box for the filename
+        file_entry = gtk.Entry()
+        self.file_entry = file_entry
+        file_entry.set_has_frame(True)
+        file_entry.set_text('')
+        file_entry.connect("activate", self.on_text_open)
+        vbox.pack_start(file_entry, False)
 
         vbox.pack_start(self.widget)
 
@@ -2029,26 +2448,31 @@ class DotWindow(gtk.Window):
 
     def textentry_changed(self, widget, entry):
         entry_text = entry.get_text()
-        dot_widget = self.widget        
+        dot_widget = self.widget
         if not entry_text:
-            dot_widget.set_highlight(None)
+            dot_widget.set_selected(None)
             return
-        
+
         found_items = self.find_text(entry_text)
-        dot_widget.set_highlight(found_items)
+        dot_widget.set_selected(found_items)
 
     def textentry_activate(self, widget, entry):
         entry_text = entry.get_text()
-        dot_widget = self.widget        
+        dot_widget = self.widget
         if not entry_text:
-            dot_widget.set_highlight(None)
+            dot_widget.set_selected(None)
             return;
-        
-        found_items = self.find_text(entry_text)
-        dot_widget.set_highlight(found_items)
-        if(len(found_items) == 1):
-            dot_widget.animate_to(found_items[0].x, found_items[0].y)
 
+        found_items = self.find_text(entry_text)
+        if(len(found_items) == 1):
+            # drnol: select/focus node
+            dot_widget.set_pivot_node(found_items[0])
+            dot_widget.focus_node(found_items[0])
+        else:
+            dot_widget.set_selected(found_items)
+
+        win = widget.get_toplevel()
+        win.set_focus(win.uimanager.get_widget('/'))
     def set_filter(self, filter):
         self.widget.set_filter(filter)
 
@@ -2061,7 +2485,7 @@ class DotWindow(gtk.Window):
         if self.widget.set_xdotcode(xdotcode):
             self.update_title(filename)
             self.widget.zoom_to_fit()
-        
+
     def update_title(self, filename=None):
         if filename is None:
             self.set_title(self.base_title)
@@ -2070,10 +2494,35 @@ class DotWindow(gtk.Window):
 
     def open_file(self, filename):
         try:
+            self.file_entry.set_text(filename)
             fp = file(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError as ex:
+            dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+                                    message_format=str(ex),
+                                    buttons=gtk.BUTTONS_OK)
+            dlg.set_title(self.base_title)
+            dlg.run()
+            dlg.destroy()
+
+    def build_file_list(self, filepath):
+        try:
+            filepath = os.path.abspath(filepath)
+            if os.path.isdir(filepath):
+                directory = filepath
+            else:
+                directory = os.path.dirname(filepath)
+            sori = lambda x: (int(x) if x.isdigit() else x) # returns s(tring) or i(nteger)
+            natkey = lambda x: [sori(y) for y in re.split(r'(\d+)', x)]
+            self.files_in_dir = sorted([ os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.dot')],
+                                        key=natkey)
+            if os.path.isdir(filepath):
+                self.file_index = 0
+            else:
+                self.file_index = self.files_in_dir.index(filepath)
+            self.file_dir   = directory
+        except Exception as ex:
             dlg = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
                                     message_format=str(ex),
                                     buttons=gtk.BUTTONS_OK)
@@ -2098,16 +2547,88 @@ class DotWindow(gtk.Window):
         filter.set_name("All files")
         filter.add_pattern("*")
         chooser.add_filter(filter)
+        try:
+            chooser.set_current_folder(self.file_dir)
+        except AttributeError:
+            pass # Will happen on the first call, because self.file_dir would not exist
+        except:
+            raise
         if chooser.run() == gtk.RESPONSE_OK:
             filename = chooser.get_filename()
             self.last_open_dir = chooser.get_current_folder()
             chooser.destroy()
+            self.build_file_list(filename)
             self.open_file(filename)
         else:
             chooser.destroy()
 
+    def on_text_open(self, action):
+        fileentry = self.file_entry.get_text()
+        if os.path.exists(fileentry):
+            fileentry = os.path.abspath(fileentry)
+            self.file_entry.set_text(fileentry)
+            self.file_entry.set_position(1000) # some large number to push the cursor to the end
+
+        if os.path.isfile(fileentry):
+            self.build_file_list(fileentry)
+            self.open_file(fileentry)
+            self.child_focus(gtk.DIR_TAB_FORWARD)
+        elif os.path.isdir(fileentry):
+            self.build_file_list(fileentry)
+            if self.files_in_dir:              # found .dot files
+                self.open_file(self.files_in_dir[0])
+                self.child_focus(gtk.DIR_TAB_FORWARD)
+
     def on_reload(self, action):
         self.widget.reload()
+
+    def on_quit(self, action):
+        gtk.main_quit()
+
+    def on_next(self, action):
+        try:
+            self.file_index += 1
+            if self.file_index >= len(self.files_in_dir):
+                self.file_index = 0
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_prev(self, action):
+        try:
+            self.file_index -= 1
+            if self.file_index < 0:
+                self.file_index = len(self.files_in_dir)-1
+            self.open_file(self.files_in_dir[self.file_index])
+        except:
+            # can happen when the button is pushed with no file loaded
+            pass
+
+    def on_window_key_press_event(self, widget, event):
+        if event.keyval == gtk.keysyms.F2:
+            # drnol: jump to prev highlighted item
+            self.widget.jump_to_prev_selected_node()
+            return True
+        elif event.keyval == gtk.keysyms.F3:
+            # drnol: jump to next highlighted item
+            self.widget.jump_to_next_selected_node()
+            return True
+
+        if self.file_entry.is_focus() or self.textentry.is_focus():
+            return False
+
+        if event.keyval == gtk.keysyms.p or event.keyval == gtk.keysyms.j:
+            self.on_prev(None)
+            return True
+        elif event.keyval == gtk.keysyms.n or event.keyval == gtk.keysyms.k:
+            self.on_next(None)
+            return True
+        elif event.keyval == gtk.keysyms.o:
+            self.on_open(None)
+            return True
+        else:
+            return self.widget.on_key_press_event(widget, event)
 
 
 class OptionParser(optparse.OptionParser):
@@ -2119,7 +2640,6 @@ class OptionParser(optparse.OptionParser):
 
 
 def main():
-
     parser = OptionParser(
         usage='\n\t%prog [file]',
         epilog='''
@@ -2134,6 +2654,17 @@ Shortcuts:
   Escape                    halt animation
   Ctrl-drag                 zoom in/out
   Shift-drag                zooms an area
+  F2                        prev highlighted item
+  F3                        next highlighted item
+  ,                         select prev focused node's edge
+  .                         select next focused node's edge
+  Enter                     follow selected edge
+  p,j                       prev file
+  n,k                       next file
+  o                         browse file
+  Ctrl-click                display shortest path (retargetable)
+  Ctrl-shift-click          display reverse shortest path (retargetable)
+  right click               dot url open ([URL="dots://file1;file2;..."]) (Linux only)
 '''
     )
     parser.add_option(
@@ -2157,30 +2688,31 @@ Shortcuts:
         if args[0] == '-':
             win.set_dotcode(sys.stdin.read())
         else:
+            win.build_file_list(args[0])
             win.open_file(args[0])
     gtk.main()
 
 
 # Apache-Style Software License for ColorBrewer software and ColorBrewer Color
 # Schemes, Version 1.1
-# 
+#
 # Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State
 # University. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions as source code must retain the above copyright notice,
-#    this list of conditions and the following disclaimer.  
+#    this list of conditions and the following disclaimer.
 #
 #    2. The end-user documentation included with the redistribution, if any,
 #    must include the following acknowledgment:
-# 
+#
 #       This product includes color specifications and designs developed by
 #       Cynthia Brewer (http://colorbrewer.org/).
-# 
+#
 #    Alternately, this acknowledgment may appear in the software itself, if and
-#    wherever such third-party acknowledgments normally appear.  
+#    wherever such third-party acknowledgments normally appear.
 #
 #    3. The name "ColorBrewer" must not be used to endorse or promote products
 #    derived from this software without prior written permission. For written
@@ -2188,8 +2720,8 @@ Shortcuts:
 #
 #    4. Products derived from this software may not be called "ColorBrewer",
 #    nor may "ColorBrewer" appear in their name, without prior written
-#    permission of Cynthia Brewer. 
-# 
+#    permission of Cynthia Brewer.
+#
 # THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES,
 # INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
 # FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL CYNTHIA
@@ -2199,7 +2731,7 @@ Shortcuts:
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 brewer_colors = {
     'accent3': [(127, 201, 127), (190, 174, 212), (253, 192, 134)],
     'accent4': [(127, 201, 127), (190, 174, 212), (253, 192, 134), (255, 255, 153)],
