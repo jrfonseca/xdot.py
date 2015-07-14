@@ -137,32 +137,31 @@ class TextShape(Shape):
 
             # set font
             font = pango.FontDescription()
-            attrs = pango.AttrList()
 
-            # set font attributes
+            # https://developer.gnome.org/pango/stable/PangoMarkupFormat.html
+            markup = gobject.markup_escape_text(self.t)
             if self.pen.bold:
-                font.set_weight(pango.WEIGHT_BOLD)
+                markup = '<b>' + markup + '</b>'
             if self.pen.italic:
-                font.set_style(pango.STYLE_ITALIC)
+                markup = '<i>' + markup + '</i>'
             if self.pen.underline:
-                underline = pango.AttrUnderline(pango.UNDERLINE_SINGLE, 0, len(self.t))
-                attrs.insert(underline)
+                markup = '<span underline="single">' + markup + '</span>'
             if self.pen.strikethrough:
-                st =  pango.AttrStrikethrough(True, 0, len(self.t))
-                attrs.insert(st)
+                markup = '<s>' + markup + '</s>'
+            if self.pen.superscript:
+                markup = '<sup><small>' + markup + '</small></sup>'
+            if self.pen.subscript:
+                markup = '<sub><small>' + markup + '</small></sub>'
 
+            attrs, text, accel_char = pango.parse_markup(markup, u'\x00')
             layout.set_attributes(attrs)
 
-            fontsize = self.pen.fontsize
-            if self.pen.superscript or self.pen.subscript:
-                fontsize /= 1.5
-
             font.set_family(self.pen.fontname)
-            font.set_absolute_size(fontsize*pango.SCALE)
+            font.set_absolute_size(self.pen.fontsize*pango.SCALE)
             layout.set_font_description(font)
 
             # set text
-            layout.set_text(self.t)
+            layout.set_text(text)
 
             # cache it
             self.layout = layout
@@ -195,10 +194,7 @@ class TextShape(Shape):
         else:
             assert 0
 
-        if self.pen.superscript:
-            y = self.y - 1.5*height
-        else:
-            y = self.y - height + descent
+        y = self.y - height + descent
 
         cr.move_to(x, y)
 
