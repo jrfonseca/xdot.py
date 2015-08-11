@@ -226,6 +226,9 @@ class TextShape(Shape):
     def search_text(self, regexp):
         return regexp.search(self.t) is not None
 
+    def __repr__(self):
+        return "<TextShape t=%s>"%self.t
+
 
 class ImageShape(Shape):
 
@@ -476,6 +479,12 @@ class Edge(Element):
         if self.is_inside_end(x, y):
             return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
         return None
+
+    def search_text(self, text):
+        for shape in self.shapes:
+            if shape.search_text(text):
+                return True
+        return False
 
     def __repr__(self):
         return "<Edge %s -> %s>" % (self.src, self.dst)
@@ -2037,6 +2046,9 @@ class DotWindow(Gtk.Window):
         found_items = []
         dot_widget = self.dotwidget
         regexp = re.compile(entry_text)
+        for edge in dot_widget.graph.edges:
+            if edge.search_text(regexp):
+                found_items.append(edge)
         for node in dot_widget.graph.nodes:
             if node.search_text(regexp):
                 found_items.append(node)
