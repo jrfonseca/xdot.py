@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2008-2015 Jose Fonseca
 #
@@ -158,7 +158,7 @@ class TextShape(Shape):
             if self.pen.subscript:
                 markup = '<sub><small>' + markup + '</small></sub>'
 
-            success, attrs, text, accel_char = Pango.parse_markup(markup, -1, u'\x00')
+            success, attrs, text, accel_char = Pango.parse_markup(markup, -1, '\x00')
             assert success
             layout.set_attributes(attrs)
 
@@ -335,7 +335,7 @@ class BezierShape(Shape):
     def draw(self, cr, highlight=False):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
-        for i in xrange(1, len(self.points), 3):
+        for i in range(1, len(self.points), 3):
             x1, y1 = self.points[i]
             x2, y2 = self.points[i + 1]
             x3, y3 = self.points[i + 2]
@@ -560,7 +560,7 @@ class XDotAttrParser:
         self.pen = Pen()
         self.shapes = []
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.pos < len(self.buf)
 
     def read_code(self):
@@ -888,7 +888,7 @@ class Lexer:
         self.col = 1
         self.filename = filename
 
-    def next(self):
+    def __next__(self):
         while True:
             # save state
             pos = self.pos
@@ -937,7 +937,7 @@ class Parser:
 
     def __init__(self, lexer):
         self.lexer = lexer
-        self.lookahead = self.lexer.next()
+        self.lookahead = next(self.lexer)
 
     def match(self, type):
         if self.lookahead.type != type:
@@ -953,7 +953,7 @@ class Parser:
 
     def consume(self):
         token = self.lookahead
-        self.lookahead = self.lexer.next()
+        self.lookahead = next(self.lexer)
         return token
 
 
@@ -1589,8 +1589,6 @@ class DotWidget(Gtk.DrawingArea):
 
     def set_dotcode(self, dotcode, filename=None):
         self.openfilename = None
-        if isinstance(dotcode, unicode):
-            dotcode = dotcode.encode('utf8')
         xdotcode = self.run_filter(dotcode)
         if xdotcode is None:
             return False
@@ -1861,7 +1859,7 @@ class DotWidget(Gtk.DrawingArea):
             if event.button == 1:
                 url = self.get_url(x, y)
                 if url is not None:
-                    self.emit('clicked', unicode(url.url), event)
+                    self.emit('clicked', url.url, event)
                 else:
                     jump = self.get_jump(x, y)
                     if jump is not None:
