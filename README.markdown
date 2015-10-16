@@ -49,9 +49,9 @@ Screenshots
 Requirements
 ============
 
- * [Python](http://www.python.org/download/) (2.6 or 2.7)
+ * [Python 3](http://www.python.org/download/)
 
- * [PyGTK](http://www.pygtk.org/downloads.html) (2.10 or greater)
+ * [PyGObject bindings for GTK3](https://wiki.gnome.org/action/show/Projects/PyGObject)
 
  * [Graphviz](http://www.graphviz.org/Download.php)
 
@@ -62,9 +62,7 @@ Download and install:
 
  * [Python for Windows](http://www.python.org/download/)
 
- * [GTK+ Runtime for Windows](http://www.gtk.org/download/win32.php)
-
- * [PyCairo, PyGobject, and PyGTK for Windows](http://www.pygtk.org/downloads.html)
+ * [PyGObject bindings for GTK3](https://wiki.gnome.org/action/show/Projects/PyGObject)
 
  * [Graphviz for Windows](http://www.graphviz.org/Download_windows.php)
 
@@ -73,7 +71,7 @@ Debian/Ubuntu users
 
 Run:
 
-    apt-get install python-gtk2 graphviz
+    apt-get install python3-gi-cairo graphviz
 
 Usage
 =====
