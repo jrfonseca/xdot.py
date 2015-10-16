@@ -80,7 +80,7 @@ def main():
         sys.stdout.write(arg + '\n')
         sys.stdout.flush()
         name, ext = os.path.splitext(os.path.basename(arg))
-        dotcode = open(arg).read()
+        dotcode = open(arg, 'rb').read()
         widget = TestDotWidget(name)
         window = DotWindow(widget)
         window.connect('delete-event', Gtk.main_quit)
