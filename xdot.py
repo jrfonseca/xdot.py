@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2008 Jose Fonseca
+# Copyright 2008-2015 Jose Fonseca
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published
@@ -167,7 +167,7 @@ class TextShape(Shape):
             layout.set_font_description(font)
 
             # set text
-            layout.set_text(text, len(text))
+            layout.set_text(text, -1)
 
             # cache it
             self.layout = layout
@@ -1197,6 +1197,8 @@ class XDotParser(DotParser):
         self.shapes = []
         self.node_by_name = {}
         self.top_graph = True
+        self.width = 0
+        self.height = 0
 
     def handle_graph(self, attrs):
         if self.top_graph:
@@ -1618,7 +1620,7 @@ class DotWidget(Gtk.DrawingArea):
     def reload(self):
         if self.openfilename is not None:
             try:
-                fp = file(self.openfilename, 'rt')
+                fp = open(self.openfilename, 'rt')
                 self.set_dotcode(fp.read(), self.openfilename)
                 fp.close()
             except IOError:
@@ -2065,7 +2067,7 @@ class DotWindow(Gtk.Window):
 
     def open_file(self, filename):
         try:
-            fp = file(filename, 'rt')
+            fp = open(filename, 'rt')
             self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError as ex:
