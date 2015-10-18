@@ -42,10 +42,25 @@ class TestDotWidget(DotWidget):
 
             import cairo
 
+            # Scale to give 96 dpi instead of 72 dpi
             dpi = 96.0
-            zoom_ratio = dpi/72.0
-            w = int(self.graph.width*zoom_ratio)
-            h = int(self.graph.height*zoom_ratio)
+            scale = dpi/72.0
+            w = int(self.graph.width*scale)
+            h = int(self.graph.height*scale)
+
+            CAIRO_XMAX = 32767
+            CAIRO_YMAX = 32767
+            if w >= CAIRO_XMAX:
+                w = CAIRO_XMAX
+                scale = w/self.graph.width
+                h = int(self.graph.height*scale)
+            if h >= CAIRO_YMAX:
+                h = CAIRO_YMAX
+                scale = h/self.graph.height
+                w = int(self.graph.width*scale)
+
+            assert w <= CAIRO_XMAX
+            assert h <= CAIRO_YMAX
 
             surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
 
@@ -54,7 +69,7 @@ class TestDotWidget(DotWidget):
             cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
             cr.paint()
 
-            cr.scale(zoom_ratio, zoom_ratio)
+            cr.scale(scale, scale)
 
             self.graph.draw(cr, highlight_items=self.highlight)
 
@@ -89,9 +104,12 @@ def main():
         except:
             exc_info = sys.exc_info()
             traceback.print_exception(*exc_info)
-        window.show()
-        Gtk.main()
-        window.destroy()
+            continue
+        try:
+            window.show()
+            Gtk.main()
+        finally:
+            window.destroy()
 
 
 if __name__ == '__main__':
