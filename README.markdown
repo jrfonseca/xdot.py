@@ -37,7 +37,7 @@ See also:
 
   * [github issue tracker](https://github.com/jrfonseca/xdot.py/issues)
 
-  * [googlecode issue tracker](https://code.google.com/p/jrfonseca/issues/list?q=xdot).
+  * [googlecode issue tracker](https://code.google.com/archive/p/jrfonseca/issues).
 
 Screenshots
 ===========
@@ -125,6 +125,6 @@ Links
 
  * [ZGRViewer](http://zvtm.sourceforge.net/zgrviewer.html) -- another superb graphviz/dot viewer
 
- * [dot2tex](http://code.google.com/p/dot2tex/) -- python script to convert xdot output from Graphviz to a series of PSTricks or PGF/TikZ commands.
+ * [dot2tex](https://github.com/kjellmf/dot2tex) -- python script to convert xdot output from Graphviz to a series of PSTricks or PGF/TikZ commands.
 
  * The [pypy project](http://codespeak.net/pypy/) also includes an [interactive dot viewer based on graphviz's plain format and the pygame library](http://morepypy.blogspot.com/2008/01/visualizing-python-tokenizer.html).
