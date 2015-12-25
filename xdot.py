@@ -950,6 +950,12 @@ class Parser:
 
     def skip(self, type):
         while self.lookahead.type != type:
+            if self.lookahead.type == EOF:
+                raise ParseError(
+                   msg = 'unexpected end of file',
+                   filename = self.lexer.filename,
+                   line = self.lookahead.line,
+                   col = self.lookahead.col)
             self.consume()
 
     def consume(self):
