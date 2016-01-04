@@ -1964,7 +1964,7 @@ class DotWindow(Gtk.Window):
 
     base_title = 'Dot Viewer'
 
-    def __init__(self, widget=None):
+    def __init__(self, widget=None, width=512, height=512):
         Gtk.Window.__init__(self)
 
         self.graph = Graph()
@@ -1972,7 +1972,7 @@ class DotWindow(Gtk.Window):
         window = self
 
         window.set_title(self.base_title)
-        window.set_default_size(512, 512)
+        window.set_default_size(width, height)
         vbox = Gtk.VBox()
         window.add(vbox)
 
@@ -2165,12 +2165,23 @@ Shortcuts:
         '-n', '--no-filter',
         action='store_const', const=None, dest='filter',
         help='assume input is already filtered into xdot format (use e.g. dot -Txdot)')
+    parser.add_option(
+        '-g', None,
+        action='store', dest='geometry',
+        help='default window size in form WxH')
 
     (options, args) = parser.parse_args(sys.argv[1:])
     if len(args) > 1:
         parser.error('incorrect number of arguments')
 
-    win = DotWindow()
+    width = height = 512
+    if options.geometry:
+        try:
+            width,height = (int(i) for i in options.geometry.split('x'))
+        except ValueError:
+            parser.error('invalid window geometry')
+
+    win = DotWindow(width=width, height=height)
     win.connect('delete-event', Gtk.main_quit)
     win.set_filter(options.filter)
     if len(args) >= 1:

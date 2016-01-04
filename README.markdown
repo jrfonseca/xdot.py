@@ -89,6 +89,7 @@ Command Line
                             [default: dot]
       -n, --no-filter       assume input is already filtered into xdot format (use
                             e.g. dot -Txdot)
+      -g GEOMETRY           default window size in form WxH
     
     Shortcuts:
       Up, Down, Left, Right     scroll
