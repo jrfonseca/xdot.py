@@ -1,0 +1,25 @@
+# Use trusty for newer graphviz
+sudo: required
+dist: trusty
+
+language: python
+
+python:
+# https://github.com/travis-ci/travis-ci/issues/2219
+- "3.4_with_system_site_packages"
+
+addons:
+  apt:
+    packages:
+    - gir1.2-gtk-3.0
+    - python3-gi
+    - python3-gi-cairo
+    - graphviz
+    - xvfb
+
+before_install:
+- dot -V
+
+script:
+- cd tests
+- xvfb-run -a -s '-screen 0 1024x768x24' python ../test.py *.dot graphs/*.gv
