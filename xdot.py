@@ -1586,12 +1586,7 @@ class DotWidget(Gtk.DrawingArea):
             error = error.decode()
             sys.stderr.write(error + '\n')
         if p.returncode != 0:
-            dialog = Gtk.MessageDialog(type=Gtk.MessageType.ERROR,
-                                       message_format=error,
-                                       buttons=Gtk.ButtonsType.OK)
-            dialog.set_title('Dot Viewer')
-            dialog.run()
-            dialog.destroy()
+            self.error_dialog(error)
             return None
         return xdotcode
 
@@ -1605,12 +1600,7 @@ class DotWidget(Gtk.DrawingArea):
         try:
             self.set_xdotcode(xdotcode)
         except ParseError as ex:
-            dialog = Gtk.MessageDialog(type=Gtk.MessageType.ERROR,
-                                       message_format=str(ex),
-                                       buttons=Gtk.ButtonsType.OK)
-            dialog.set_title('Dot Viewer')
-            dialog.run()
-            dialog.destroy()
+            self.error_dialog(str(ex))
             return False
         else:
             if filename is None:
@@ -2080,12 +2070,7 @@ class DotWindow(Gtk.Window):
             self.set_dotcode(fp.read(), filename)
             fp.close()
         except IOError as ex:
-            dlg = Gtk.MessageDialog(type=Gtk.MessageType.ERROR,
-                                    message_format=str(ex),
-                                    buttons=Gtk.ButtonsType.OK)
-            dlg.set_title(self.base_title)
-            dlg.run()
-            dlg.destroy()
+            self.error_dialog(str(ex))
 
     def on_open(self, action):
         chooser = Gtk.FileChooserDialog(title="Open dot File",
@@ -2114,6 +2099,14 @@ class DotWindow(Gtk.Window):
 
     def on_reload(self, action):
         self.dotwidget.reload()
+
+    def error_dialog(self, message):
+        dlg = Gtk.MessageDialog(type=Gtk.MessageType.ERROR,
+                                message_format=message,
+                                buttons=Gtk.ButtonsType.OK)
+        dlg.set_title(self.base_title)
+        dlg.run()
+        dlg.destroy()
 
 
 class OptionParser(optparse.OptionParser):

@@ -89,6 +89,10 @@ class TestDotWidget(DotWidget):
 
         Gtk.main_quit()
 
+    def error_dialog(self, message):
+        sys.stderr.write(message)
+        sys.stderr.write("\n")
+
 
 def main():
     for arg in sys.argv[1:]:
