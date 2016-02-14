@@ -71,7 +71,7 @@ Debian/Ubuntu users
 
 Run:
 
-    apt-get install python3-gi-cairo graphviz
+    apt-get install gir1.2-gtk-3.0 python3-gi python3-gi-cairo graphviz
 
 Usage
 =====
