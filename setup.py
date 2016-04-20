@@ -15,7 +15,7 @@ from setuptools import setup
 
 setup(
     name='xdot',
-    version='0.6',
+    version='0.7',
     author='Jose Fonseca',
     author_email='jose.r.fonseca@gmail.com',
     url='https://github.com/jrfonseca/xdot.py',
