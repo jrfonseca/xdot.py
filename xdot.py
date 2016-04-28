@@ -1322,7 +1322,7 @@ class Animation(object):
         self.timeout_id = None
 
     def start(self):
-        self.timeout_id = GLib.timeout_add(int(self.step * 1000), self.tick)
+        self.timeout_id = GLib.timeout_add(int(self.step * 1000), self.__real_tick)
 
     def stop(self):
         self.dot_widget.animation = NoAnimation(self.dot_widget)
@@ -1330,8 +1330,18 @@ class Animation(object):
             GLib.source_remove(self.timeout_id)
             self.timeout_id = None
 
+    def __real_tick(self):
+        try:
+            if not self.tick():
+                self.stop()
+                return False
+        except e:
+            self.stop()
+            raise e
+        return True
+
     def tick(self):
-        self.stop()
+        return False
 
 
 class NoAnimation(Animation):
