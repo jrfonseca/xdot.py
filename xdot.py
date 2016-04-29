@@ -1537,7 +1537,8 @@ class DotWidget(Gtk.DrawingArea):
 
     #TODO GTK3: Second argument has to be of type Gdk.EventButton instead of object.
     __gsignals__ = {
-        'clicked' : (GObject.SIGNAL_RUN_LAST, None, (str, object))
+        'clicked' : (GObject.SIGNAL_RUN_LAST, None, (str, object)),
+        'error' : (GObject.SIGNAL_RUN_LAST, None, (str,))
     }
 
     filter = 'dot'
@@ -1574,6 +1575,9 @@ class DotWidget(Gtk.DrawingArea):
         self.drag_action = NullAction(self)
         self.presstime = None
         self.highlight = None
+
+    def error_dialog(self, message):
+        self.emit('error', message)
 
     def set_filter(self, filter):
         self.filter = filter
@@ -1973,6 +1977,7 @@ class DotWindow(Gtk.Window):
         window.add(vbox)
 
         self.dotwidget = widget or DotWidget()
+        self.dotwidget.connect("error", lambda e, m: self.error_dialog(m))
 
         # Create a UIManager instance
         uimanager = self.uimanager = Gtk.UIManager()
