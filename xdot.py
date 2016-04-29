@@ -2087,7 +2087,8 @@ class DotWindow(Gtk.Window):
             self.error_dialog(str(ex))
 
     def on_open(self, action):
-        chooser = Gtk.FileChooserDialog(title="Open dot File",
+        chooser = Gtk.FileChooserDialog(parent=self,
+                                        title="Open dot File",
                                         action=Gtk.FileChooserAction.OPEN,
                                         buttons=(Gtk.STOCK_CANCEL,
                                                  Gtk.ResponseType.CANCEL,
@@ -2115,7 +2116,8 @@ class DotWindow(Gtk.Window):
         self.dotwidget.reload()
 
     def error_dialog(self, message):
-        dlg = Gtk.MessageDialog(type=Gtk.MessageType.ERROR,
+        dlg = Gtk.MessageDialog(parent=self,
+                                type=Gtk.MessageType.ERROR,
                                 message_format=message,
                                 buttons=Gtk.ButtonsType.OK)
         dlg.set_title(self.base_title)
