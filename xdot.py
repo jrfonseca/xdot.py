@@ -1575,6 +1575,7 @@ class DotWidget(Gtk.DrawingArea):
         self.drag_action = NullAction(self)
         self.presstime = None
         self.highlight = None
+        self.highlight_search = False
 
     def error_dialog(self, message):
         self.emit('error', message)
@@ -1676,7 +1677,13 @@ class DotWidget(Gtk.DrawingArea):
         self.y = y
         self.queue_draw()
 
-    def set_highlight(self, items):
+    def set_highlight(self, items, search=False):
+        # Enable or disable search highlight
+        if search:
+            self.highlight_search = items is not None
+        # Ignore cursor highlight while searching
+        if self.highlight_search and not search:
+            return
         if self.highlight != items:
             self.highlight = items
             self.queue_draw()
@@ -2037,30 +2044,30 @@ class DotWindow(Gtk.Window):
         found_items = []
         dot_widget = self.dotwidget
         regexp = re.compile(entry_text)
-        for node in dot_widget.graph.nodes:
-            if node.search_text(regexp):
-                found_items.append(node)
+        for element in dot_widget.graph.nodes + dot_widget.graph.edges:
+            if element.search_text(regexp):
+                found_items.append(element)
         return found_items
 
     def textentry_changed(self, widget, entry):
         entry_text = entry.get_text()
         dot_widget = self.dotwidget        
         if not entry_text:
-            dot_widget.set_highlight(None)
+            dot_widget.set_highlight(None, search=True)
             return
         
         found_items = self.find_text(entry_text)
-        dot_widget.set_highlight(found_items)
+        dot_widget.set_highlight(found_items, search=True)
 
     def textentry_activate(self, widget, entry):
         entry_text = entry.get_text()
         dot_widget = self.dotwidget        
         if not entry_text:
-            dot_widget.set_highlight(None)
+            dot_widget.set_highlight(None, search=True)
             return;
         
         found_items = self.find_text(entry_text)
-        dot_widget.set_highlight(found_items)
+        dot_widget.set_highlight(found_items, search=True)
         if(len(found_items) == 1):
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
 
