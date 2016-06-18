@@ -32,8 +32,9 @@ setup(
         """,
     license="LGPL",
 
-    py_modules=['xdot'],
-    entry_points=dict(gui_scripts=['xdot=xdot:main']),
+    install_requires=['graphviz'],
+    packages=['xdot'],
+    entry_points=dict(gui_scripts=['xdot=xdot.__main__:main']),
 
     # This is true, but pointless, because easy_install PyGTK chokes and dies
     #install_requires=['PyGTK', 'pycairo'],
