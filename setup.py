@@ -55,6 +55,6 @@ setup(
         'Topic :: Multimedia :: Graphics :: Viewers',
     ],
 
-    # This is true, but pointless, because easy_install PyGTK chokes and dies
-    #install_requires=['PyGTK', 'pycairo'],
+    # This is true, but doesn't work realiably
+    #install_requires=['gi', 'gi-cairo'],
 )
