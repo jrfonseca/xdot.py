@@ -35,6 +35,26 @@ setup(
     py_modules=['xdot'],
     entry_points=dict(gui_scripts=['xdot=xdot:main']),
 
+    # https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers=[
+        'Development Status :: 6 - Mature',
+
+        'Environment :: X11 Applications :: GTK',
+
+        'Intended Audience :: Information Technology',
+
+        'Operating System :: OS Independent',
+
+        'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
+
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3 :: Only',
+
+        'Topic :: Multimedia :: Graphics :: Viewers',
+    ],
+
     # This is true, but pointless, because easy_install PyGTK chokes and dies
     #install_requires=['PyGTK', 'pycairo'],
 )
