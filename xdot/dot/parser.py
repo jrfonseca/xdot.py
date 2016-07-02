@@ -18,7 +18,7 @@ import sys
 
 from .lexer import ParseError, DotLexer
 
-from ..ui.colours import lookup_color
+from ..ui.colors import lookup_color
 from ..ui.pen import Pen
 from ..ui import elements
 
