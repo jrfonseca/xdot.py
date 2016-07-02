@@ -15,24 +15,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import optparse
+import argparse
 import sys
 
 from .ui.window import DotWindow, Gtk
 
 
-class OptionParser(optparse.OptionParser):
-
-    def format_epilog(self, formatter):
-        # Prevent stripping the newlines in epilog message
-        # http://stackoverflow.com/questions/1857346/python-optparse-how-to-include-additional-info-in-usage-output
-        return self.epilog
-
-
 def main():
 
-    parser = OptionParser(
-        usage='\n\t%prog [file]',
+    parser = argparse.ArgumentParser(
+        description="xdot.py is an interactive viewer for graphs written in Graphviz's dot language.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Shortcuts:
   Up, Down, Left, Right     scroll
@@ -47,23 +40,24 @@ Shortcuts:
   Shift-drag                zooms an area
 '''
     )
-    parser.add_option(
-        '-f', '--filter',
-        type='choice', choices=('dot', 'neato', 'twopi', 'circo', 'fdp'),
-        dest='filter', default='dot',
-        help='graphviz filter: dot, neato, twopi, circo, or fdp [default: %default]')
-    parser.add_option(
+    parser.add_argument(
+        'inputfile', metavar='file', nargs='?',
+        help='input file to be viewed')
+    parser.add_argument(
+        '-f', '--filter', choices=['dot', 'neato', 'twopi', 'circo', 'fdp'],
+        dest='filter', default='dot', metavar='FILTER',
+        help='graphviz filter: dot, neato, twopi, circo, or fdp [default: %(default)s]')
+    parser.add_argument(
         '-n', '--no-filter',
         action='store_const', const=None, dest='filter',
         help='assume input is already filtered into xdot format (use e.g. dot -Txdot)')
-    parser.add_option(
-        '-g', None,
+    parser.add_argument(
+        '-g', '--geometry',
         action='store', dest='geometry',
         help='default window size in form WxH')
 
-    (options, args) = parser.parse_args(sys.argv[1:])
-    if len(args) > 1:
-        parser.error('incorrect number of arguments')
+    options = parser.parse_args()
+    inputfile = options.inputfile
 
     width = height = 512
     if options.geometry:
@@ -75,11 +69,11 @@ Shortcuts:
     win = DotWindow(width=width, height=height)
     win.connect('delete-event', Gtk.main_quit)
     win.set_filter(options.filter)
-    if len(args) >= 1:
-        if args[0] == '-':
+    if inputfile and len(inputfile) >= 1:
+        if inputfile == '-':
             win.set_dotcode(sys.stdin.read())
         else:
-            win.open_file(args[0])
+            win.open_file(inputfile)
     Gtk.main()
 
 if __name__ == '__main__':
