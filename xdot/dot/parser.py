@@ -25,12 +25,8 @@ from gi.repository import Gdk
 from .lexer import ParseError, DotLexer
 
 from ..ui.colours import brewer_colors
-from ..ui.pen import (Pen, BOLD, ITALIC, UNDERLINE, SUPERSCRIPT,
-                      SUBSCRIPT, STRIKE_THROUGH, OVERLINE)
-from ..ui.elements import (TextShape, ImageShape, EllipseShape,
-                           PolygonShape, LineShape, BezierShape,
-                           CompoundShape, Url, Jump, Element,
-                           Node, Edge, Graph)
+from ..ui.pen import Pen
+from ..ui import elements
 
 
 EOF = -1
@@ -298,42 +294,42 @@ class XDotAttrParser:
         self.pen.fontname = name
 
     def handle_font_characteristics(self, flags):
-        self.pen.bold = bool(flags & BOLD)
-        self.pen.italic = bool(flags & ITALIC)
-        self.pen.underline = bool(flags & UNDERLINE)
-        self.pen.superscript = bool(flags & SUPERSCRIPT)
-        self.pen.subscript = bool(flags & SUBSCRIPT)
-        self.pen.strikethrough = bool(flags & STRIKE_THROUGH)
-        self.pen.overline = bool(flags & OVERLINE)
+        self.pen.bold = bool(flags & Pen.BOLD)
+        self.pen.italic = bool(flags & Pen.ITALIC)
+        self.pen.underline = bool(flags & Pen.UNDERLINE)
+        self.pen.superscript = bool(flags & Pen.SUPERSCRIPT)
+        self.pen.subscript = bool(flags & Pen.SUBSCRIPT)
+        self.pen.strikethrough = bool(flags & Pen.STRIKE_THROUGH)
+        self.pen.overline = bool(flags & Pen.OVERLINE)
         if self.pen.overline:
             sys.stderr.write('warning: overlined text not supported yet\n')
 
     def handle_text(self, x, y, j, w, t):
-        self.shapes.append(TextShape(self.pen, x, y, j, w, t))
+        self.shapes.append(elements.TextShape(self.pen, x, y, j, w, t))
 
     def handle_ellipse(self, x0, y0, w, h, filled=False):
         if filled:
             # xdot uses this to mean "draw a filled shape with an outline"
-            self.shapes.append(EllipseShape(self.pen, x0, y0, w, h, filled=True))
-        self.shapes.append(EllipseShape(self.pen, x0, y0, w, h))
+            self.shapes.append(elements.EllipseShape(self.pen, x0, y0, w, h, filled=True))
+        self.shapes.append(elements.EllipseShape(self.pen, x0, y0, w, h))
 
     def handle_image(self, x0, y0, w, h, path):
-        self.shapes.append(ImageShape(self.pen, x0, y0, w, h, path))
+        self.shapes.append(elements.ImageShape(self.pen, x0, y0, w, h, path))
 
     def handle_line(self, points):
-        self.shapes.append(LineShape(self.pen, points))
+        self.shapes.append(elements.LineShape(self.pen, points))
 
     def handle_bezier(self, points, filled=False):
         if filled:
             # xdot uses this to mean "draw a filled shape with an outline"
-            self.shapes.append(BezierShape(self.pen, points, filled=True))
-        self.shapes.append(BezierShape(self.pen, points))
+            self.shapes.append(elements.BezierShape(self.pen, points, filled=True))
+        self.shapes.append(elements.BezierShape(self.pen, points))
 
     def handle_polygon(self, points, filled=False):
         if filled:
             # xdot uses this to mean "draw a filled shape with an outline"
-            self.shapes.append(PolygonShape(self.pen, points, filled=True))
-        self.shapes.append(PolygonShape(self.pen, points))
+            self.shapes.append(elements.PolygonShape(self.pen, points, filled=True))
+        self.shapes.append(elements.PolygonShape(self.pen, points))
 
 
 class DotParser(Parser):
@@ -527,7 +523,7 @@ class XDotParser(DotParser):
                 parser = XDotAttrParser(self, attrs[attr])
                 shapes.extend(parser.parse())
         url = attrs.get('URL', None)
-        node = Node(id, x, y, w, h, shapes, url)
+        node = elements.Node(id, x, y, w, h, shapes, url)
         self.node_by_name[id] = node
         if shapes:
             self.nodes.append(node)
@@ -547,11 +543,12 @@ class XDotParser(DotParser):
         if shapes:
             src = self.node_by_name[src_id]
             dst = self.node_by_name[dst_id]
-            self.edges.append(Edge(src, dst, points, shapes))
+            self.edges.append(elements.Edge(src, dst, points, shapes))
 
     def parse(self):
         DotParser.parse(self)
-        return Graph(self.width, self.height, self.shapes, self.nodes, self.edges)
+        return elements.Graph(self.width, self.height, self.shapes,
+                              self.nodes, self.edges)
 
     def parse_node_pos(self, pos):
         x, y = pos.split(b",")
