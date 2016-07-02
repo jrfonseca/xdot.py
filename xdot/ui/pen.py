@@ -13,17 +13,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-BOLD = 1
-ITALIC = 2
-UNDERLINE = 4
-SUPERSCRIPT = 8
-SUBSCRIPT = 16
-STRIKE_THROUGH = 32
-OVERLINE = 64
 
 
 class Pen:
     """Store pen attributes."""
+
+    BOLD = 1
+    ITALIC = 2
+    UNDERLINE = 4
+    SUPERSCRIPT = 8
+    SUBSCRIPT = 16
+    STRIKE_THROUGH = 32
+    OVERLINE = 64
 
     def __init__(self):
         # set default attributes

@@ -39,8 +39,8 @@ from gi.repository import Gdk
 from . import actions
 from ..dot.lexer import ParseError
 from ..dot.parser import XDotParser
-from .animation import NoAnimation, ZoomToAnimation
-from .actions import NullAction, PanAction, ZoomAction, ZoomAreaAction
+from . import animation
+from . import actions
 from .elements import Graph
 
 
@@ -84,8 +84,8 @@ class DotWidget(Gtk.DrawingArea):
         self.x, self.y = 0.0, 0.0
         self.zoom_ratio = 1.0
         self.zoom_to_fit_on_resize = False
-        self.animation = NoAnimation(self)
-        self.drag_action = NullAction(self)
+        self.animation = animation.NoAnimation(self)
+        self.drag_action = actions.NullAction(self)
         self.presstime = None
         self.highlight = None
         self.highlight_search = False
@@ -298,7 +298,7 @@ class DotWidget(Gtk.DrawingArea):
             return True
         if event.keyval == Gdk.KEY_Escape:
             self.drag_action.abort()
-            self.drag_action = NullAction(self)
+            self.drag_action = actions.NullAction(self)
             return True
         if event.keyval == Gdk.KEY_r:
             self.reload()
@@ -351,12 +351,12 @@ class DotWidget(Gtk.DrawingArea):
         if event.button in (1, 2):  # left or middle button
             modifiers = Gtk.accelerator_get_default_mod_mask()
             if state & modifiers == Gdk.ModifierType.CONTROL_MASK:
-                return ZoomAction
+                return actions.ZoomAction
             elif state & modifiers == Gdk.ModifierType.SHIFT_MASK:
-                return ZoomAreaAction
+                return actions.ZoomAreaAction
             else:
-                return PanAction
-        return NullAction
+                return actions.PanAction
+        return actions.NullAction
 
     def on_area_button_press(self, area, event):
         self.animation.stop()
@@ -389,7 +389,7 @@ class DotWidget(Gtk.DrawingArea):
 
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
-        self.drag_action = NullAction(self)
+        self.drag_action = actions.NullAction(self)
         x, y = int(event.x), int(event.y)
         if self.is_click(event):
             el = self.get_element(x, y)
@@ -431,7 +431,7 @@ class DotWidget(Gtk.DrawingArea):
             self.zoom_to_fit()
 
     def animate_to(self, x, y):
-        self.animation = ZoomToAnimation(self, x, y)
+        self.animation = animation.ZoomToAnimation(self, x, y)
         self.animation.start()
 
     def window2graph(self, x, y):
