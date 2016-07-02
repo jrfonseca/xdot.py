@@ -32,8 +32,9 @@ setup(
         """,
     license="LGPL",
 
-    py_modules=['xdot'],
-    entry_points=dict(gui_scripts=['xdot=xdot:main']),
+    install_requires=['graphviz'],
+    packages=['xdot'],
+    entry_points=dict(gui_scripts=['xdot=xdot.__main__:main']),
 
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
