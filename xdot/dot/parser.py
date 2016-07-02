@@ -16,15 +16,9 @@
 import colorsys
 import sys
 
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('PangoCairo', '1.0')
-
-from gi.repository import Gdk
-
 from .lexer import ParseError, DotLexer
 
-from ..ui.colours import brewer_colors
+from ..ui.colours import lookup_color
 from ..ui.pen import Pen
 from ..ui import elements
 
@@ -166,36 +160,7 @@ class XDotAttrParser:
             sys.stderr.write('warning: color gradients not supported yet\n')
             return None
         else:
-            return self.lookup_color(c)
-
-    def lookup_color(self, c):
-        try:
-            color = Gdk.color_parse(c)
-        except ValueError:
-            pass
-        else:
-            s = 1.0/65535.0
-            r = color.red*s
-            g = color.green*s
-            b = color.blue*s
-            a = 1.0
-            return r, g, b, a
-
-        try:
-            dummy, scheme, index = c.split('/')
-            r, g, b = brewer_colors[scheme][int(index)]
-        except (ValueError, KeyError):
-            pass
-        else:
-            s = 1.0/255.0
-            r = r*s
-            g = g*s
-            b = b*s
-            a = 1.0
-            return r, g, b, a
-
-        sys.stderr.write("warning: unknown color '%s'\n" % c)
-        return None
+            return lookup_color(c)
 
     def parse(self):
         s = self
