@@ -68,7 +68,7 @@ Shortcuts:
     width = height = 512
     if options.geometry:
         try:
-            width,height = (int(i) for i in options.geometry.split('x'))
+            width, height = (int(i) for i in options.geometry.split('x'))
         except ValueError:
             parser.error('invalid window geometry')
 

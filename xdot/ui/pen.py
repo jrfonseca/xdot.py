@@ -21,6 +21,7 @@ SUBSCRIPT = 16
 STRIKE_THROUGH = 32
 OVERLINE = 64
 
+
 class Pen:
     """Store pen attributes."""
 

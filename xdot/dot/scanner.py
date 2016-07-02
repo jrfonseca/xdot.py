@@ -54,10 +54,11 @@ class Scanner:
         flags = re.DOTALL
         if self.ignorecase:
             flags |= re.IGNORECASE
-        self.tokens_re = re.compile(
-            b'|'.join([b'(' + regexp + b')' for type, regexp, test_lit in self.tokens]),
-             flags
-        )
+            self.tokens_re = re.compile(
+                b'|'.join([b'(' + regexp + b')'
+                           for type, regexp, test_lit in self.tokens]),
+                flags
+            )
 
     def next(self, buf, pos):
         if pos >= len(buf):
@@ -71,7 +72,7 @@ class Scanner:
                 type = self.literals.get(text, type)
             return type, text, pos
         else:
-            c = buf[pos : pos + 1]
+            c = buf[pos:pos+1]
             return self.symbols.get(c, None), c, pos + 1
 
 
@@ -81,11 +82,11 @@ class DotScanner(Scanner):
     tokens = [
         # whitespace and comments
         (SKIP,
-            br'[ \t\f\r\n\v]+|'
-            br'//[^\r\n]*|'
-            br'/\*.*?\*/|'
-            br'#[^\r\n]*',
-        False),
+         br'[ \t\f\r\n\v]+|'
+         br'//[^\r\n]*|'
+         br'/\*.*?\*/|'
+         br'#[^\r\n]*',
+         False),
 
         # Alphanumeric IDs
         (ID, br'[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*', True),

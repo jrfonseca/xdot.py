@@ -83,7 +83,8 @@ class TextShape(Shape):
                 # 'TypeError: font_options must be a cairo.FontOptions or None'
                 pass
             except KeyError:
-                # cairo.FontOptions is not registered as a foreign struct in older PyGObject versions.
+                # cairo.FontOptions is not registered as a foreign
+                # struct in older PyGObject versions.
                 # https://git.gnome.org/browse/pygobject/commit/?id=b21f66d2a399b8c9a36a1758107b7bdff0ec8eaa
                 pass
 
@@ -121,7 +122,7 @@ class TextShape(Shape):
         else:
             PangoCairo.update_layout(cr, layout)
 
-        descent = 2 # XXX get descender from font metrics
+        descent = 2  # XXX get descender from font metrics
 
         width, height = layout.get_size()
         width = float(width)/Pango.SCALE
@@ -132,7 +133,7 @@ class TextShape(Shape):
         # scale it so that the text fits inside its box
         if width > self.w:
             f = self.w / width
-            width = self.w # equivalent to width *= f
+            width = self.w  # equivalent to width *= f
             height *= f
             descent *= f
         else:
@@ -157,7 +158,7 @@ class TextShape(Shape):
         PangoCairo.show_layout(cr, layout)
         cr.restore()
 
-        if 0: # DEBUG
+        if 0:  # DEBUG
             # show where dot thinks the text should appear
             cr.set_source_rgba(1, 0, 0, .9)
             if self.j == self.LEFT:
