@@ -306,9 +306,9 @@ brewer_colors = {
 
 
 def lookup_color(c):
-    """Return RGBA values of colour c
+    """Return RGBA values of color c
 
-    c should be either an X11 colour or a brewer colour set and index
+    c should be either an X11 color or a brewer color set and index
     e.g. "navajowhite", "greens3/2"
 
     """
