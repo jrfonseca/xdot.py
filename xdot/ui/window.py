@@ -47,10 +47,10 @@ from .elements import Graph
 class DotWidget(Gtk.DrawingArea):
     """GTK widget that draws dot graphs."""
 
-    #TODO GTK3: Second argument has to be of type Gdk.EventButton instead of object.
+    # TODO GTK3: Second argument has to be of type Gdk.EventButton instead of object.
     __gsignals__ = {
-        'clicked' : (GObject.SIGNAL_RUN_LAST, None, (str, object)),
-        'error' : (GObject.SIGNAL_RUN_LAST, None, (str,))
+        'clicked': (GObject.SIGNAL_RUN_LAST, None, (str, object)),
+        'error': (GObject.SIGNAL_RUN_LAST, None, (str,))
     }
 
     filter = 'dot'
@@ -64,7 +64,8 @@ class DotWidget(Gtk.DrawingArea):
         self.set_can_focus(True)
 
         self.connect("draw", self.on_draw)
-        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK |
+                        Gdk.EventMask.BUTTON_RELEASE_MASK)
         self.connect("button-press-event", self.on_area_button_press)
         self.connect("button-release-event", self.on_area_button_release)
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
@@ -317,10 +318,11 @@ class DotWidget(Gtk.DrawingArea):
         return False
 
     print_settings = None
+
     def on_print(self, action=None):
         print_op = Gtk.PrintOperation()
 
-        if self.print_settings != None:
+        if self.print_settings is not None:
             print_op.set_print_settings(self.print_settings)
 
         print_op.connect("begin_print", self.begin_print)
@@ -346,7 +348,7 @@ class DotWidget(Gtk.DrawingArea):
 
     def get_drag_action(self, event):
         state = event.state
-        if event.button in (1, 2): # left or middle button
+        if event.button in (1, 2):  # left or middle button
             modifiers = Gtk.accelerator_get_default_mod_mask()
             if state & modifiers == Gdk.ModifierType.CONTROL_MASK:
                 return ZoomAction
@@ -376,8 +378,8 @@ class DotWidget(Gtk.DrawingArea):
         # for gtk's clicked event instead?
         deltax = self.pressx - event.x
         deltay = self.pressy - event.y
-        return (time.time() < self.presstime + click_timeout
-                and math.hypot(deltax, deltay) < click_fuzz)
+        return (time.time() < self.presstime + click_timeout and
+                math.hypot(deltax, deltay) < click_fuzz)
 
     def on_click(self, element, event):
         """Override this method in subclass to process
@@ -513,7 +515,8 @@ class DotWindow(Gtk.Window):
         actiongroup.add_actions((
             ('Open', Gtk.STOCK_OPEN, None, None, None, self.on_open),
             ('Reload', Gtk.STOCK_REFRESH, None, None, None, self.on_reload),
-            ('Print', Gtk.STOCK_PRINT, None, None, "Prints the currently visible part of the graph", self.dotwidget.on_print),
+            ('Print', Gtk.STOCK_PRINT, None, None,
+             "Prints the currently visible part of the graph", self.dotwidget.on_print),
             ('ZoomIn', Gtk.STOCK_ZOOM_IN, None, None, None, self.dotwidget.on_zoom_in),
             ('ZoomOut', Gtk.STOCK_ZOOM_OUT, None, None, None, self.dotwidget.on_zoom_out),
             ('ZoomFit', Gtk.STOCK_ZOOM_FIT, None, None, None, self.dotwidget.on_zoom_fit),
@@ -521,7 +524,7 @@ class DotWindow(Gtk.Window):
         ))
 
         find_action = FindMenuToolAction("Find", None,
-                                          "Find a node by name", None)
+                                         "Find a node by name", None)
         actiongroup.add_action(find_action)
 
         # Add the actiongroup to the uimanager
@@ -547,8 +550,8 @@ class DotWindow(Gtk.Window):
         find_toolitem.add(self.textentry)
 
         self.textentry.set_activates_default(True)
-        self.textentry.connect ("activate", self.textentry_activate, self.textentry);
-        self.textentry.connect ("changed", self.textentry_changed, self.textentry);
+        self.textentry.connect("activate", self.textentry_activate, self.textentry);
+        self.textentry.connect("changed", self.textentry_changed, self.textentry);
 
         self.show_all()
 
@@ -576,7 +579,7 @@ class DotWindow(Gtk.Window):
         dot_widget = self.dotwidget
         if not entry_text:
             dot_widget.set_highlight(None, search=True)
-            return;
+            return
 
         found_items = self.find_text(entry_text)
         dot_widget.set_highlight(found_items, search=True)

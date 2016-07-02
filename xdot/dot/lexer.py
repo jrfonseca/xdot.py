@@ -44,7 +44,9 @@ class ParseError(Exception):
         self.col = col
 
     def __str__(self):
-        return ':'.join([str(part) for part in (self.filename, self.line, self.col, self.msg) if part != None])
+        return ':'.join([str(part) for part in
+                         (self.filename, self.line, self.col, self.msg)
+                         if part is not None])
 
 
 class Lexer:
@@ -55,7 +57,7 @@ class Lexer:
 
     newline_re = re.compile(br'\r\n?|\n')
 
-    def __init__(self, buf = None, pos = 0, filename = None, fp = None):
+    def __init__(self, buf=None, pos=0, filename=None, fp=None):
         if fp is not None:
             try:
                 fileno = fp.fileno()
@@ -69,7 +71,7 @@ class Lexer:
                 # map the whole file into memory
                 if length:
                     # length must not be zero
-                    buf = mmap.mmap(fileno, length, access = mmap.ACCESS_READ)
+                    buf = mmap.mmap(fileno, length, access=mmap.ACCESS_READ)
                     pos = os.lseek(fileno, 0, 1)
                 else:
                     buf = b''
@@ -108,7 +110,7 @@ class Lexer:
                 raise ParseError(msg, self.filename, line, col)
             else:
                 break
-        return Token(type = type, text = text, line = line, col = col)
+        return Token(type=type, text=text, line=line, col=col)
 
     def consume(self, text):
         # update line number
@@ -124,7 +126,7 @@ class Lexer:
             if tabpos == -1:
                 break
             self.col += tabpos - pos
-            self.col = ((self.col - 1)//self.tabsize + 1)*self.tabsize + 1
+            self.col = ((self.col - 1) // self.tabsize + 1) * self.tabsize + 1
             pos = tabpos + 1
         self.col += len(text) - pos
 

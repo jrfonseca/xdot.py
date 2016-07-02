@@ -68,19 +68,19 @@ class Parser:
     def match(self, type):
         if self.lookahead.type != type:
             raise ParseError(
-                msg = 'unexpected token %r' % self.lookahead.text,
-                filename = self.lexer.filename,
-                line = self.lookahead.line,
-                col = self.lookahead.col)
+                msg='unexpected token {}'.format(self.lookahead.text),
+                filename=self.lexer.filename,
+                line=self.lookahead.line,
+                col=self.lookahead.col)
 
     def skip(self, type):
         while self.lookahead.type != type:
             if self.lookahead.type == EOF:
                 raise ParseError(
-                   msg = 'unexpected end of file',
-                   filename = self.lexer.filename,
-                   line = self.lookahead.line,
-                   col = self.lookahead.col)
+                    msg='unexpected end of file',
+                    filename=self.lexer.filename,
+                    line=self.lookahead.line,
+                    col=self.lookahead.col)
             self.consume()
 
     def consume(self):
@@ -115,7 +115,7 @@ class XDotAttrParser:
         return res
 
     def skip_space(self):
-        while self.pos < len(self.buf) and self.buf[self.pos : self.pos + 1].isspace():
+        while self.pos < len(self.buf) and self.buf[self.pos:self.pos+1].isspace():
             self.pos += 1
 
     def read_int(self):
@@ -439,7 +439,8 @@ class DotParser(Parser):
         else:
             port = None
             compass_pt = None
-        # XXX: we don't really care about port and compass point values when parsing xdot
+            # XXX: we don't really care about port and compass point
+            # values when parsing xdot
         return node_id
 
     def parse_id(self):
@@ -463,7 +464,7 @@ class XDotParser(DotParser):
     XDOTVERSION = '1.7'
 
     def __init__(self, xdotcode):
-        lexer = DotLexer(buf = xdotcode)
+        lexer = DotLexer(buf=xdotcode)
         DotParser.__init__(self, lexer)
 
         self.nodes = []
@@ -483,7 +484,8 @@ class XDotParser(DotParser):
                 pass
             else:
                 if float(xdotversion) > float(self.XDOTVERSION):
-                    sys.stderr.write('warning: xdot version %s, but supported is %s\n' % (xdotversion, self.XDOTVERSION))
+                    sys.stderr.write('warning: xdot version %s, but supported is %s\n' %
+                                     (xdotversion, self.XDOTVERSION))
 
             # Parse bounding box
             try:
@@ -500,7 +502,7 @@ class XDotParser(DotParser):
                 self.yscale = -1.0
                 # FIXME: scale from points to pixels
 
-                self.width  = max(xmax - xmin, 1)
+                self.width = max(xmax - xmin, 1)
                 self.height = max(ymax - ymin, 1)
 
                 self.top_graph = False

@@ -25,7 +25,7 @@ from gi.repository import GLib
 
 class Animation(object):
 
-    step = 0.03 # seconds
+    step = 0.03  # seconds
 
     def __init__(self, dot_widget):
         self.dot_widget = dot_widget
@@ -45,7 +45,7 @@ class Animation(object):
             if not self.tick():
                 self.stop()
                 return False
-        except e:
+        except AttributeError as e:
             self.stop()
             raise e
         return True
@@ -92,8 +92,8 @@ class MoveToAnimation(LinearAnimation):
     def animate(self, t):
         sx, sy = self.source_x, self.source_y
         tx, ty = self.target_x, self.target_y
-        self.dot_widget.x = tx * t + sx * (1-t)
-        self.dot_widget.y = ty * t + sy * (1-t)
+        self.dot_widget.x = tx * t + sx * (1 - t)
+        self.dot_widget.y = ty * t + sy * (1 - t)
         self.dot_widget.queue_draw()
 
 
@@ -118,6 +118,6 @@ class ZoomToAnimation(MoveToAnimation):
 
     def animate(self, t):
         a, b, c = self.source_zoom, self.extra_zoom, self.target_zoom
-        self.dot_widget.zoom_ratio = c*t + b*t*(1-t) + a*(1-t)
+        self.dot_widget.zoom_ratio = c*t + b*t*(1 - t) + a*(1 - t)
         self.dot_widget.zoom_to_fit_on_resize = False
         MoveToAnimation.animate(self, t)
