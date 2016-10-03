@@ -487,7 +487,7 @@ class XDotParser(DotParser):
             if attr in attrs:
                 parser = XDotAttrParser(self, attrs[attr])
                 shapes.extend(parser.parse())
-        url = attrs.get('URL', None)
+        url = attrs.get('URL', None).decode('utf-8')
         node = elements.Node(id, x, y, w, h, shapes, url)
         self.node_by_name[id] = node
         if shapes:
