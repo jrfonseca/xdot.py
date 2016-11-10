@@ -33,7 +33,7 @@ setup(
     license="LGPL",
 
     install_requires=['graphviz'],
-    packages=['xdot'],
+    packages=['xdot', 'xdot/dot', 'xdot/ui'],
     entry_points=dict(gui_scripts=['xdot=xdot.__main__:main']),
 
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
