@@ -97,25 +97,28 @@ class TestDotWidget(DotWidget):
 
 
 def main():
+    status = 0
     for arg in sys.argv[1:]:
         sys.stdout.write(arg + '\n')
         sys.stdout.flush()
         name, ext = os.path.splitext(os.path.basename(arg))
-        dotcode = open(arg, 'rb').read()
         widget = TestDotWidget(name)
         window = DotWindow(widget)
         window.connect('delete-event', Gtk.main_quit)
         try:
-            window.set_dotcode(dotcode)
-        except:
-            exc_info = sys.exc_info()
-            traceback.print_exception(*exc_info)
-            continue
-        try:
-            window.show()
-            Gtk.main()
+            try:
+                dotcode = open(arg, 'rb').read()
+                window.set_dotcode(dotcode)
+            except:
+                exc_info = sys.exc_info()
+                traceback.print_exception(*exc_info)
+                status = 1
+            else:
+                window.show()
+                Gtk.main()
         finally:
             window.destroy()
+    sys.exit(status)
 
 
 if __name__ == '__main__':
