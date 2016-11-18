@@ -17,6 +17,7 @@
 #
 import argparse
 import sys
+import signal
 
 from .ui.window import DotWindow, Gtk
 
@@ -74,6 +75,11 @@ Shortcuts:
             win.set_dotcode(sys.stdin.read())
         else:
             win.open_file(inputfile)
+
+    if sys.platform != 'win32':
+        # Reset KeyboardInterrupt SIGINT handler, so that glib loop can be stopped by it
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     Gtk.main()
 
 if __name__ == '__main__':
