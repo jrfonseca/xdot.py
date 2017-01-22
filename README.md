@@ -10,9 +10,9 @@ _xdot.py_ can be used either as a standalone application from command line, or a
 Status
 ======
 
-_xdot.py_ script became much more popular than I ever anticipated, and there are several interested in improving it further.  However, for several years now, _xdot.py_ already meets my own needs, and unfortunately I don't have much time for maintaing it myself.
+_xdot.py_ script became much more popular than I ever anticipated, and there are several interested in improving it further.  However, for several years now, _xdot.py_ already meets my own needs, and unfortunately I don't have much time for maintaining it myself.
 
-So I'm looking into transition _xdot.py_ maitenance to [others](https://github.com/jrfonseca/xdot.py/wiki/Forks): either hand over the maintenance _xdot.py_ to a community or indicate an official fork of _xdot.py_.
+So I'm looking into transition _xdot.py_ maintenance to [others](https://github.com/jrfonseca/xdot.py/wiki/Forks): either hand over the maintenance _xdot.py_ to a community or indicate an official fork of _xdot.py_.
 
 I encourage people interested in development of _xdot.py_ to fork the [GitHub repository](https://github.com/jrfonseca/xdot.py), and join the new [mailing list](https://groups.google.com/d/forum/xdot-py).
 
