@@ -23,3 +23,14 @@ before_install:
 script:
 - cd tests
 - xvfb-run -a -s '-screen 0 1024x768x24' python ../test.py *.dot graphs/*.gv
+
+# https://docs.travis-ci.com/user/deployment/pypi/
+deploy:
+  provider: pypi
+  user: jrfonseca
+  password:
+    secure: WJOfZYkpzmG62sHgoBb66TDGeFHP/KNGrwl/ul8Q22SdFCr5u3gpmQ8bHGgV3fXk/onuDPC3gJxcLpH5+MeZEHiS+pL+gP5XbtiEGOXPe8N2I3eIffO4gHnx1naC5stdk8v44SAY/9pw+CGBOHDJXWMeMDM/QEWo7bpHsZkpRZI=
+  on:
+    tags: true
+    distributions: sdist
+    repo: jrfonseca/xdot.py
