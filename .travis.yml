@@ -23,6 +23,7 @@ before_install:
 script:
 - cd tests
 - xvfb-run -a -s '-screen 0 1024x768x24' python ../test.py *.dot graphs/*.gv
+- cd ..
 
 # https://docs.travis-ci.com/user/deployment/pypi/
 deploy:
@@ -34,5 +35,4 @@ deploy:
     tags: true
     distributions: sdist
     repo: jrfonseca/xdot.py
-  skip_cleanup: true
   skip_upload_docs: true
