@@ -34,3 +34,5 @@ deploy:
     tags: true
     distributions: sdist
     repo: jrfonseca/xdot.py
+  skip_cleanup: true
+  skip_upload_docs: true
