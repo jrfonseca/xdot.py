@@ -3,7 +3,7 @@ About _xdot.py_
 
 _xdot.py_ is an interactive viewer for graphs written in [Graphviz](http://www.graphviz.org/)'s [dot language](http://www.graphviz.org/doc/info/lang.html).
 
-It uses internally the GraphViz's [xdot output format](http://www.graphviz.org/doc/info/output.html#d:xdot) as an intermediate format, and [PyGTK](http://www.pygtk.org/) and [Cairo](http://cairographics.org/) for rendering.
+It uses internally the GraphViz's [xdot output format](http://www.graphviz.org/doc/info/output.html#d:xdot) as an intermediate format, [Python GTK bindings](https://pygobject.readthedocs.io), and [Cairo](https://cairographics.org/) for rendering.
 
 _xdot.py_ can be used either as a standalone application from command line, or as a library embedded in your Python application.
 
@@ -47,9 +47,9 @@ Screenshots
 Requirements
 ============
 
- * [Python 3](http://www.python.org/download/)
+ * [Python 3](https://www.python.org/download/)
 
- * [PyGObject bindings for GTK3](https://wiki.gnome.org/action/show/Projects/PyGObject)
+ * [PyGObject bindings for GTK3](https://pygobject.readthedocs.io)
 
  * [Graphviz](http://www.graphviz.org/Download.php)
 
@@ -58,7 +58,7 @@ Windows users
 
 Download and install:
 
- * [Python for Windows](http://www.python.org/download/)
+ * [Python for Windows](https://www.python.org/downloads/windows/)
 
  * [PyGObject bindings for GTK3](https://wiki.gnome.org/action/show/Projects/PyGObject)
 
@@ -126,4 +126,4 @@ Links
 
  * [dot2tex](https://github.com/kjellmf/dot2tex) -- python script to convert xdot output from Graphviz to a series of PSTricks or PGF/TikZ commands.
 
- * The [PyPy project](http://pypy.org/) also includes an [interactive dot viewer based on graphviz's plain format and the pygame library](http://morepypy.blogspot.com/2008/01/visualizing-python-tokenizer.html).
+ * The [PyPy project](http://pypy.org/) also includes an [interactive dot viewer based on graphviz's plain format and the pygame library](https://morepypy.blogspot.com/2008/01/visualizing-python-tokenizer.html).
