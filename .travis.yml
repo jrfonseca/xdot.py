@@ -1,5 +1,7 @@
 # Use trusty for newer graphviz
 sudo: required
+# https://blog.travis-ci.com/2017-06-21-trusty-updates-2017-Q2-launch
+group: deprecated-2017Q2
 dist: trusty
 
 language: python
