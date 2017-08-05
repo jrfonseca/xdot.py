@@ -1,14 +1,7 @@
-# Use trusty for newer graphviz
 sudo: required
-# https://blog.travis-ci.com/2017-06-21-trusty-updates-2017-Q2-launch
-group: deprecated-2017Q2
 dist: trusty
 
-language: python
-
-python:
-# https://github.com/travis-ci/travis-ci/issues/2219
-- "3.4_with_system_site_packages"
+language: generic
 
 addons:
   apt:
@@ -21,10 +14,11 @@ addons:
 
 before_install:
 - dot -V
+- /usr/bin/python3 --version
 
 script:
 - cd tests
-- LANG=C xvfb-run -a -s '-screen 0 1024x768x24' python ../test.py *.dot graphs/*.gv
+- LANG=C xvfb-run -a -s '-screen 0 1024x768x24' /usr/bin/python3 ../test.py *.dot graphs/*.gv
 - cd ..
 
 # https://docs.travis-ci.com/user/deployment/pypi/
