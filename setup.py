@@ -3,12 +3,11 @@
 # The purpose of this script is to enable uploading xdot.py to the Python
 # Package Index, which can be easily done by doing:
 #
-#   python setup.py register
-#   python setup.py sdist upload
+#   python3 setup.py sdist upload
 #
 # See also:
-# - https://code.google.com/archive/p/jrfonseca/issues/19
-# - http://docs.python.org/2/distutils/packageindex.html
+# - https://packaging.python.org/distributing/
+# - https://docs.python.org/3/distutils/packageindex.html
 #
 
 from setuptools import setup
