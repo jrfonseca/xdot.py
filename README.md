@@ -77,6 +77,14 @@ Usage
 Command Line
 ------------
 
+If you install _xdot.py_ from PyPI or from your Linux distribution package managing system, you should have the `xdot` somewhere in your `PATH` automatically.
+
+When running _xdot.py_ from its source tree, you can run it by first setting `PYTHONPATH` environment variable to the full path of _xdot.py_'s source tree, then running:
+
+    python3 -m xdot
+
+You can also pass the following options:
+
     Usage: 
     	xdot.py [file]
     
