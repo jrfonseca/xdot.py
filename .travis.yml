@@ -11,6 +11,7 @@ addons:
     - python3-gi-cairo
     - graphviz
     - xvfb
+    - twine
 
 before_install:
 - dot -V
