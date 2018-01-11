@@ -122,8 +122,7 @@ class DotWidget(Gtk.DrawingArea):
             return None
         return xdotcode
 
-    def set_dotcode(self, dotcode, filename=None):
-        self.openfilename = None
+    def _set_dotcode(self, dotcode, filename=None):
         # By default DOT language is UTF-8, but it accepts other encodings
         assert isinstance(dotcode, bytes)
         xdotcode = self.run_filter(dotcode)
@@ -135,6 +134,11 @@ class DotWidget(Gtk.DrawingArea):
             self.error_dialog(str(ex))
             return False
         else:
+            return True
+
+    def set_dotcode(self, dotcode, filename=None):
+        self.openfilename = None
+        if self._set_dotcode(dotcode, filename):
             if filename is None:
                 self.last_mtime = None
             else:
@@ -152,7 +156,7 @@ class DotWidget(Gtk.DrawingArea):
         if self.openfilename is not None:
             try:
                 fp = open(self.openfilename, 'rb')
-                self.set_dotcode(fp.read(), self.openfilename)
+                self._set_dotcode(fp.read(), self.openfilename)
                 fp.close()
             except IOError:
                 pass
