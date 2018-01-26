@@ -31,7 +31,6 @@ setup(
         """,
     license="LGPL",
 
-    install_requires=['graphviz'],
     packages=['xdot', 'xdot/dot', 'xdot/ui'],
     entry_points=dict(gui_scripts=['xdot=xdot.__main__:main']),
 
