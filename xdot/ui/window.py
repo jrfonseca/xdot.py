@@ -122,23 +122,23 @@ class DotWidget(Gtk.DrawingArea):
             return None
         return xdotcode
 
-    def _set_dotcode(self, dotcode, filename=None):
+    def _set_dotcode(self, dotcode, filename=None, center=True):
         # By default DOT language is UTF-8, but it accepts other encodings
         assert isinstance(dotcode, bytes)
         xdotcode = self.run_filter(dotcode)
         if xdotcode is None:
             return False
         try:
-            self.set_xdotcode(xdotcode)
+            self.set_xdotcode(xdotcode, center=center)
         except ParseError as ex:
             self.error_dialog(str(ex))
             return False
         else:
             return True
 
-    def set_dotcode(self, dotcode, filename=None):
+    def set_dotcode(self, dotcode, filename=None, center=True):
         self.openfilename = None
-        if self._set_dotcode(dotcode, filename):
+        if self._set_dotcode(dotcode, filename, center=center):
             if filename is None:
                 self.last_mtime = None
             else:
@@ -146,17 +146,17 @@ class DotWidget(Gtk.DrawingArea):
             self.openfilename = filename
             return True
 
-    def set_xdotcode(self, xdotcode):
+    def set_xdotcode(self, xdotcode, center=True):
         assert isinstance(xdotcode, bytes)
         parser = XDotParser(xdotcode)
         self.graph = parser.parse()
-        self.zoom_image(self.zoom_ratio, center=True)
+        self.zoom_image(self.zoom_ratio, center=center)
 
     def reload(self):
         if self.openfilename is not None:
             try:
                 fp = open(self.openfilename, 'rb')
-                self._set_dotcode(fp.read(), self.openfilename)
+                self._set_dotcode(fp.read(), self.openfilename, center=False)
                 fp.close()
             except IOError:
                 pass
