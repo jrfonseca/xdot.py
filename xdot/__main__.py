@@ -72,7 +72,7 @@ Shortcuts:
     win.set_filter(options.filter)
     if inputfile and len(inputfile) >= 1:
         if inputfile == '-':
-            win.set_dotcode(sys.stdin.read())
+            win.set_dotcode(sys.stdin.buffer.read())
         else:
             win.open_file(inputfile)
 
