@@ -170,11 +170,11 @@ class DotWidget(Gtk.DrawingArea):
         return True
 
     def on_draw(self, widget, cr):
-        cr.set_source_rgba(1.0, 1.0, 1.0, 1.0)
-        cr.paint()
+        rect = self.get_allocation()
+        Gtk.render_background(self.get_style_context(), cr, 0, 0,
+                              rect.width, rect.height)
 
         cr.save()
-        rect = self.get_allocation()
         cr.translate(0.5*rect.width, 0.5*rect.height)
         cr.scale(self.zoom_ratio, self.zoom_ratio)
         cr.translate(-self.x, -self.y)
