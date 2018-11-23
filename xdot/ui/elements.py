@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import math
+import operator
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -26,16 +27,35 @@ from gi.repository import Pango
 from gi.repository import PangoCairo
 import cairo
 
+_inf = float('inf')
+_get_bounding = operator.attrgetter('bounding')
+
 
 class Shape:
     """Abstract base class for all the drawing shapes."""
+    bounding = (-_inf, -_inf, _inf, _inf)
 
     def __init__(self):
         pass
 
-    def draw(self, cr, highlight=False):
-        """Draw this shape with the given cairo context"""
+    def _intersects(self, bounding):
+        x0, y0, x1, y1 = bounding
+        x2, y2, x3, y3 = self.bounding
+        return x2 <= x1 and x0 <= x3 and y2 <= y1 and y0 <= y3
+
+    def _fully_in(self, bounding):
+        x0, y0, x1, y1 = bounding
+        x2, y2, x3, y3 = self.bounding
+        return x0 <= x2 and x3 <= x1 and y0 <= y2 and y3 <= y1
+
+    def _draw(self, cr, highlight, bounding):
+        """Actual draw implementation"""
         raise NotImplementedError
+
+    def draw(self, cr, highlight=False, bounding=None):
+        """Draw this shape with the given cairo context"""
+        if bounding is None or self._intersects(bounding):
+            self._draw(cr, highlight, bounding)
 
     def select_pen(self, highlight):
         if highlight:
@@ -47,6 +67,26 @@ class Shape:
 
     def search_text(self, regexp):
         return False
+
+    @staticmethod
+    def _bounds_from_points(points):
+        x0, y0 = points[0]
+        x1, y1 = x0, y0
+        for i in range(1, len(points)):
+            x, y = points[i]
+            x0, x1 = min(x0, x), max(x1, x)
+            y0, y1 = min(y0, y), max(y1, y)
+        return x0, y0, x1, y1
+
+    @staticmethod
+    def _envelope_bounds(*args):
+        xa = ya = _inf
+        xb = yb = -_inf
+        for bounds in args:
+            for x0, y0, x1, y1 in bounds:
+                xa, xb = min(xa, x0), max(xb, x1)
+                ya, yb = min(ya, y0), max(yb, y1)
+        return xa, ya, xb, yb
 
 
 class TextShape(Shape):
@@ -62,7 +102,7 @@ class TextShape(Shape):
         self.w = w  # width
         self.t = t  # text
 
-    def draw(self, cr, highlight=False):
+    def _draw(self, cr, highlight, bounding):
 
         try:
             layout = self.layout
@@ -139,40 +179,33 @@ class TextShape(Shape):
         else:
             f = 1.0
 
-        if self.j == self.LEFT:
-            x = self.x
-        elif self.j == self.CENTER:
-            x = self.x - 0.5*width
-        elif self.j == self.RIGHT:
-            x = self.x - width
-        else:
-            assert 0
-
         y = self.y - height + descent
 
-        cr.move_to(x, y)
+        if bounding is None or (y <= bounding[3] and bounding[1] <= y + height):
+            x = self.x - 0.5 * (1 + self.j) * width
+            cr.move_to(x, y)
 
-        cr.save()
-        cr.scale(f, f)
-        cr.set_source_rgba(*self.select_pen(highlight).color)
-        PangoCairo.show_layout(cr, layout)
-        cr.restore()
+            cr.save()
+            cr.scale(f, f)
+            cr.set_source_rgba(*self.select_pen(highlight).color)
+            PangoCairo.show_layout(cr, layout)
+            cr.restore()
 
         if 0:  # DEBUG
             # show where dot thinks the text should appear
             cr.set_source_rgba(1, 0, 0, .9)
-            if self.j == self.LEFT:
-                x = self.x
-            elif self.j == self.CENTER:
-                x = self.x - 0.5*self.w
-            elif self.j == self.RIGHT:
-                x = self.x - self.w
+            x = self.x - 0.5 * (1 + self.j) * width
             cr.move_to(x, self.y)
             cr.line_to(x+self.w, self.y)
             cr.stroke()
 
     def search_text(self, regexp):
         return regexp.search(self.t) is not None
+
+    @property
+    def bounding(self):
+        x, w, j = self.x, self.w, self.j
+        return x - 0.5 * (1 + j) * w, -_inf, x + 0.5 * (1 - j) * w, _inf
 
 
 class ImageShape(Shape):
@@ -186,7 +219,7 @@ class ImageShape(Shape):
         self.h = h
         self.path = path
 
-    def draw(self, cr, highlight=False):
+    def _draw(self, cr, highlight, bounding):
         pixbuf = GdkPixbuf.Pixbuf.new_from_file(self.path)
         sx = float(self.w)/float(pixbuf.get_width())
         sy = float(self.h)/float(pixbuf.get_height())
@@ -196,6 +229,11 @@ class ImageShape(Shape):
         Gdk.cairo_set_source_pixbuf(cr, pixbuf, 0, 0)
         cr.paint()
         cr.restore()
+
+    @property
+    def bounding(self):
+        x0, y0 = self.x0, self.y0
+        return x0, y0 - self.h, x0 + self.w, y0
 
 
 class EllipseShape(Shape):
@@ -209,7 +247,7 @@ class EllipseShape(Shape):
         self.h = h
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+    def _draw(self, cr, highlight, bounding):
         cr.save()
         cr.translate(self.x0, self.y0)
         cr.scale(self.w, self.h)
@@ -226,6 +264,13 @@ class EllipseShape(Shape):
             cr.set_source_rgba(*pen.color)
             cr.stroke()
 
+    @property
+    def bounding(self):
+        x0, y0, w, h = self.x0, self.y0, self.w, self.h
+        bt = 0 if self.filled else self.pen.linewidth / 2.
+        w, h = w + bt, h + bt
+        return x0 - w, y0 - h, x0 + w, y0 + h
+
 
 class PolygonShape(Shape):
 
@@ -235,7 +280,11 @@ class PolygonShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+        x0, y0, x1, y1 = Shape._bounds_from_points(self.points)
+        bt = 0 if self.filled else self.pen.linewidth / 2.
+        self.bounding = x0 - bt, y0 - bt, x1 + bt, y1 + bt
+
+    def _draw(self, cr, highlight, bounding):
         x0, y0 = self.points[-1]
         cr.move_to(x0, y0)
         for x, y in self.points:
@@ -260,7 +309,11 @@ class LineShape(Shape):
         self.pen = pen.copy()
         self.points = points
 
-    def draw(self, cr, highlight=False):
+        x0, y0, x1, y1 = Shape._bounds_from_points(self.points)
+        bt = self.pen.linewidth / 2.
+        self.bounding = x0 - bt, y0 - bt, x1 + bt, y1 + bt
+
+    def _draw(self, cr, highlight, bounding):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for x1, y1 in self.points[1:]:
@@ -280,13 +333,69 @@ class BezierShape(Shape):
         self.points = points
         self.filled = filled
 
-    def draw(self, cr, highlight=False):
+        x0, y0 = self.points[0]
+        xa = xb = x0
+        ya = yb = y0
+        for i in range(1, len(self.points), 3):
+            (x1, y1), (x2, y2), (x3, y3) = self.points[i:i+3]
+            for t in self._cubic_bernstein_extrema(x0, x1, x2, x3):
+                if 0 < t < 1:  # We're dealing only with Bezier curves
+                    v = self._cubic_bernstein(x0, x1, x2, x3, t)
+                    xa, xb = min(xa, v), max(xb, v)
+            xa, xb = min(xa, x3), max(xb, x3)  # t=0 / t=1
+            for t in self._cubic_bernstein_extrema(y0, y1, y2, y3):
+                if 0 < t < 1:  # We're dealing only with Bezier curves
+                    v = self._cubic_bernstein(y0, y1, y2, y3, t)
+                    ya, yb = min(ya, v), max(yb, v)
+            ya, yb = min(ya, y3), max(yb, y3)  # t=0 / t=1
+            x0, y0 = x3, y3
+
+        bt = 0 if self.filled else self.pen.linewidth / 2.
+        self.bounding = xa - bt, ya - bt, xb + bt, yb + bt
+
+    @staticmethod
+    def _cubic_bernstein_extrema(p0, p1, p2, p3):
+        """
+        Find extremas of a function of real domain defined by evaluating
+        a cubic bernstein polynomial of given bernstein coefficients.
+        """
+        # compute coefficients of derivative
+        a = 3.*(p3-p0+3.*(p1-p2))
+        b = 6.*(p0+p2-2.*p1)
+        c = 3.*(p1-p0)
+
+        if a == 0:
+            if b == 0:
+                return ()  # constant
+            return (-c / b,)  # linear
+
+        # quadratic
+        # compute discriminant
+        d = b*b - 4.*a*c
+        if d < 0:
+            return ()
+
+        k = -2. * a
+        if d == 0:
+            return (b / k,)
+
+        r = math.sqrt(d)
+        return ((b + r) / k, (b - r) / k)
+
+    @staticmethod
+    def _cubic_bernstein(p0, p1, p2, p3, t):
+        """
+        Evaluate polynomial of given bernstein coefficients
+        using de Casteljau's algorithm.
+        """
+        u = 1 - t
+        return p0*(u**3) + 3*t*u*(p1*u + p2*t) + p3*(t**3)
+
+    def _draw(self, cr, highlight, bounding):
         x0, y0 = self.points[0]
         cr.move_to(x0, y0)
         for i in range(1, len(self.points), 3):
-            x1, y1 = self.points[i]
-            x2, y2 = self.points[i + 1]
-            x3, y3 = self.points[i + 2]
+            (x1, y1), (x2, y2), (x3, y3) = self.points[i:i+3]
             cr.curve_to(x1, y1, x2, y2, x3, y3)
         pen = self.select_pen(highlight)
         if self.filled:
@@ -305,10 +414,14 @@ class CompoundShape(Shape):
     def __init__(self, shapes):
         Shape.__init__(self)
         self.shapes = shapes
+        self.bounding = Shape._envelope_bounds(map(_get_bounding, self.shapes))
 
-    def draw(self, cr, highlight=False):
+    def _draw(self, cr, highlight, bounding):
+        if bounding is not None and self._fully_in(bounding):
+            bounding = None
         for shape in self.shapes:
-            shape.draw(cr, highlight=highlight)
+            if bounding is None or shape._intersects(bounding):
+                shape._draw(cr, highlight, bounding)
 
     def search_text(self, regexp):
         for shape in self.shapes:
@@ -440,10 +553,21 @@ class Graph(Shape):
         self.nodes = nodes
         self.edges = edges
 
+        self.bounding = Shape._envelope_bounds(
+            map(_get_bounding, self.shapes),
+            map(_get_bounding, self.nodes),
+            map(_get_bounding, self.edges))
+
     def get_size(self):
         return self.width, self.height
 
-    def draw(self, cr, highlight_items=None):
+    def draw(self, cr, highlight_items=None, bounding=None):
+        if bounding is not None:
+            if not self._intersects(bounding):
+                return
+            if self._fully_in(bounding):
+                bounding = None
+
         if highlight_items is None:
             highlight_items = ()
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0)
@@ -452,13 +576,16 @@ class Graph(Shape):
         cr.set_line_join(cairo.LINE_JOIN_MITER)
 
         for shape in self.shapes:
-            shape.draw(cr)
+            if bounding is None or shape._intersects(bounding):
+                shape._draw(cr, highlight=False, bounding=bounding)
         for edge in self.edges:
-            should_highlight = any(e in highlight_items
-                                   for e in (edge, edge.src, edge.dst))
-            edge.draw(cr, highlight=should_highlight)
+            if bounding is None or edge._intersects(bounding):
+                should_highlight = any(e in highlight_items
+                                       for e in (edge, edge.src, edge.dst))
+                edge._draw(cr, highlight=should_highlight, bounding=bounding)
         for node in self.nodes:
-            node.draw(cr, highlight=(node in highlight_items))
+            if bounding is None or node._intersects(bounding):
+                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
 
     def get_element(self, x, y):
         for node in self.nodes:

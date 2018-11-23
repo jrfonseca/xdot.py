@@ -169,17 +169,26 @@ class DotWidget(Gtk.DrawingArea):
                 self.reload()
         return True
 
+    def _draw_graph(self, cr, rect):
+        w, h = float(rect.width), float(rect.height)
+        cx, cy = 0.5 * w, 0.5 * h
+        x, y, ratio = self.x, self.y, self.zoom_ratio
+        x0, y0 = x - cx / ratio, y - cy / ratio
+        x1, y1 = x0 + w / ratio, y0 + h / ratio
+        bounding = (x0, y0, x1, y1)
+
+        cr.translate(cx, cy)
+        cr.scale(ratio, ratio)
+        cr.translate(-x, -y)
+        self.graph.draw(cr, highlight_items=self.highlight, bounding=bounding)
+
     def on_draw(self, widget, cr):
         rect = self.get_allocation()
         Gtk.render_background(self.get_style_context(), cr, 0, 0,
                               rect.width, rect.height)
 
         cr.save()
-        cr.translate(0.5*rect.width, 0.5*rect.height)
-        cr.scale(self.zoom_ratio, self.zoom_ratio)
-        cr.translate(-self.x, -self.y)
-
-        self.graph.draw(cr, highlight_items=self.highlight)
+        self._draw_graph(cr, rect)
         cr.restore()
 
         self.drag_action.draw(cr)
@@ -342,13 +351,8 @@ class DotWidget(Gtk.DrawingArea):
 
     def draw_page(self, operation, context, page_nr):
         cr = context.get_cairo_context()
-
         rect = self.get_allocation()
-        cr.translate(0.5*rect.width, 0.5*rect.height)
-        cr.scale(self.zoom_ratio, self.zoom_ratio)
-        cr.translate(-self.x, -self.y)
-
-        self.graph.draw(cr, highlight_items=self.highlight)
+        self._draw_graph(cr, rect)
 
     def get_drag_action(self, event):
         state = event.state
