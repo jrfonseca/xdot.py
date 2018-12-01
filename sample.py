@@ -41,7 +41,7 @@ class MyDotWindow(xdot.DotWindow):
         return True
 
 
-dotcode = """
+dotcode = b"""
 digraph G {
   Hello [URL="http://en.wikipedia.org/wiki/Hello"]
   World [URL="http://en.wikipedia.org/wiki/World"]
