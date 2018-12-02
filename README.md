@@ -85,8 +85,8 @@ When running _xdot.py_ from its source tree, you can run it by first setting `PY
 
 You can also pass the following options:
 
-    Usage: 
-    	xdot.py [file]
+    Usage:
+    	xdot.py [file|-]
     
     Options:
       -h, --help            show this help message and exit
@@ -109,7 +109,7 @@ You can also pass the following options:
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
 
-If no input file is given then it will read the dot graph from the standard input.
+If `-` is given as input file then _xdot.py_ will read the dot graph from the standard input.
 
 Embedding
 ---------
