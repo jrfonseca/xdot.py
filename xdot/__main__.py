@@ -60,7 +60,7 @@ Shortcuts:
     options = parser.parse_args()
     inputfile = options.inputfile
 
-    width = height = 512
+    width, height = 610, 610
     if options.geometry:
         try:
             width, height = (int(i) for i in options.geometry.split('x'))

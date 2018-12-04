@@ -50,7 +50,8 @@ class DotWidget(Gtk.DrawingArea):
     # TODO GTK3: Second argument has to be of type Gdk.EventButton instead of object.
     __gsignals__ = {
         'clicked': (GObject.SIGNAL_RUN_LAST, None, (str, object)),
-        'error': (GObject.SIGNAL_RUN_LAST, None, (str,))
+        'error': (GObject.SIGNAL_RUN_LAST, None, (str,)),
+        'history': (GObject.SIGNAL_RUN_LAST, None, (bool, bool))
     }
 
     filter = 'dot'
@@ -89,6 +90,8 @@ class DotWidget(Gtk.DrawingArea):
         self.presstime = None
         self.highlight = None
         self.highlight_search = False
+        self.history_back = []
+        self.history_forward = []
 
     def error_dialog(self, message):
         self.emit('error', message)
@@ -160,6 +163,8 @@ class DotWidget(Gtk.DrawingArea):
                 fp.close()
             except IOError:
                 pass
+            else:
+                del self.history_back[:], self.history_forward[:]
 
     def update(self):
         if self.openfilename is not None:
@@ -439,8 +444,38 @@ class DotWidget(Gtk.DrawingArea):
             self.zoom_to_fit()
 
     def animate_to(self, x, y):
+        del self.history_forward[:]
+        self.history_back.append(self.get_current_pos())
+        self.history_changed()
+        self._animate_to(x, y)
+
+    def _animate_to(self, x, y):
         self.animation = animation.ZoomToAnimation(self, x, y)
         self.animation.start()
+
+    def history_changed(self):
+        self.emit(
+            'history',
+            bool(self.history_back),
+            bool(self.history_forward))
+
+    def on_go_back(self, action=None):
+        try:
+            item = self.history_back.pop()
+        except LookupError:
+            return
+        self.history_forward.append(self.get_current_pos())
+        self.history_changed()
+        self._animate_to(*item)
+
+    def on_go_forward(self, action=None):
+        try:
+            item = self.history_forward.pop()
+        except LookupError:
+            return
+        self.history_back.append(self.get_current_pos())
+        self.history_changed()
+        self._animate_to(*item)
 
     def window2graph(self, x, y):
         rect = self.get_allocation()
@@ -481,6 +516,9 @@ class DotWindow(Gtk.Window):
             <toolitem action="Reload"/>
             <toolitem action="Print"/>
             <separator/>
+            <toolitem action="Back"/>
+            <toolitem action="Forward"/>
+            <separator/>
             <toolitem action="ZoomIn"/>
             <toolitem action="ZoomOut"/>
             <toolitem action="ZoomFit"/>
@@ -507,6 +545,7 @@ class DotWindow(Gtk.Window):
 
         self.dotwidget = widget or DotWidget()
         self.dotwidget.connect("error", lambda e, m: self.error_dialog(m))
+        self.dotwidget.connect("history", self.on_history)
 
         # Create a UIManager instance
         uimanager = self.uimanager = Gtk.UIManager()
@@ -530,6 +569,16 @@ class DotWindow(Gtk.Window):
             ('ZoomFit', Gtk.STOCK_ZOOM_FIT, None, None, None, self.dotwidget.on_zoom_fit),
             ('Zoom100', Gtk.STOCK_ZOOM_100, None, None, None, self.dotwidget.on_zoom_100),
         ))
+
+        self.back_action = Gtk.Action('Back', None, None, Gtk.STOCK_GO_BACK)
+        self.back_action.set_sensitive(False)
+        self.back_action.connect("activate", self.dotwidget.on_go_back)
+        actiongroup.add_action(self.back_action)
+
+        self.forward_action = Gtk.Action('Forward', None, None, Gtk.STOCK_GO_FORWARD)
+        self.forward_action.set_sensitive(False)
+        self.forward_action.connect("activate", self.dotwidget.on_go_forward)
+        actiongroup.add_action(self.forward_action)
 
         find_action = FindMenuToolAction("Find", None,
                                          "Find a node by name", None)
@@ -658,3 +707,7 @@ class DotWindow(Gtk.Window):
         dlg.set_title(self.base_title)
         dlg.run()
         dlg.destroy()
+
+    def on_history(self, action, has_back, has_forward):
+        self.back_action.set_sensitive(has_back)
+        self.forward_action.set_sensitive(has_forward)
