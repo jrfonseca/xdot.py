@@ -325,6 +325,8 @@ class DotParser(Parser):
             if self.lookahead.type == ID:
                 id = self.lookahead.text
                 self.consume()
+                # A subgraph is also a node.
+                self.handle_node(id, {})
         if self.lookahead.type == LCURLY:
             self.consume()
             while self.lookahead.type != RCURLY:
@@ -477,6 +479,12 @@ class XDotParser(DotParser):
         try:
             pos = attrs['pos']
         except KeyError:
+            # Node without pos attribute, most likely a subgraph.  We need to
+            # create a Node object nevertheless, so that any edges to/from it
+            # don't get lost.
+            # TODO: Extract the position from subgraph > graph > bb attribute.
+            node = elements.Node(id, 0.0, 0.0, 0.0, 0.0, [], None)
+            self.node_by_name[id] = node
             return
 
         x, y = self.parse_node_pos(pos)
