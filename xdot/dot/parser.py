@@ -437,6 +437,7 @@ class XDotParser(DotParser):
         self.top_graph = True
         self.width = 0
         self.height = 0
+        self.outputorder = 'breadthfirst'
 
     def handle_graph(self, attrs):
         if self.top_graph:
@@ -450,6 +451,12 @@ class XDotParser(DotParser):
                     sys.stderr.write('warning: xdot version %s, but supported is %s\n' %
                                      (xdotversion, self.XDOTVERSION))
 
+            # Parse output order
+            try:
+                self.outputorder = attrs['outputorder']
+            except KeyError:
+                pass
+                    
             # Parse bounding box
             try:
                 bb = attrs['bb']
