@@ -1,0 +1,14 @@
+digraph draworder {
+	outputorder=nodesfirst;
+	size ="8.5, 11";
+	0 [shape = circle, style = filled, color = lightgrey ];
+	2 [ shape = trapezium, style = filled, color = lightgrey, label = <
+	     <table border='0' cellborder='0'>
+	            <tr><td port='a'>A</td><td port='b'>B</td></tr>
+		    <tr><td colspan='2'>Some label goes here</td></tr>
+	     </table>
+	>];
+
+	0 -> 2:a [ label = "a" ];
+	0 -> 2:b [ label = "b" ];
+}
