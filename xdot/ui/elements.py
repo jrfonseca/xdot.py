@@ -578,14 +578,14 @@ class Graph(Shape):
         for shape in self.shapes:
             if bounding is None or shape._intersects(bounding):
                 shape._draw(cr, highlight=False, bounding=bounding)
+        for node in self.nodes:
+            if bounding is None or node._intersects(bounding):
+                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
         for edge in self.edges:
             if bounding is None or edge._intersects(bounding):
                 should_highlight = any(e in highlight_items
                                        for e in (edge, edge.src, edge.dst))
                 edge._draw(cr, highlight=should_highlight, bounding=bounding)
-        for node in self.nodes:
-            if bounding is None or node._intersects(bounding):
-                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
 
     def get_element(self, x, y):
         for node in self.nodes:
