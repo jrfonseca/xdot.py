@@ -533,7 +533,7 @@ class XDotParser(DotParser):
     def parse(self):
         DotParser.parse(self)
         return elements.Graph(self.width, self.height, self.shapes,
-                              self.nodes, self.edges)
+                              self.nodes, self.edges, self.outputorder)
 
     def parse_node_pos(self, pos):
         x, y = pos.split(b",")
