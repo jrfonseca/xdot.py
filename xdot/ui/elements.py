@@ -572,7 +572,7 @@ class Graph(Shape):
             if bounding is None or node._intersects(bounding):
                 node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
 
-    def _draw_edges(self, cr, bounding):
+    def _draw_edges(self, cr, bounding, highlight_items):
         for edge in self.edges:
             if bounding is None or edge._intersects(bounding):
                 should_highlight = any(e in highlight_items
@@ -595,11 +595,11 @@ class Graph(Shape):
 
         self._draw_shapes(cr, bounding)
         if self.outputorder == 'edgesfirst':
-            self._draw_edges(cr, bounding)
+            self._draw_edges(cr, bounding, highlight_items)
             self._draw_nodes(cr, bounding, highlight_items)
         else:
             self._draw_nodes(cr, bounding, highlight_items)
-            self._draw_edges(cr, bounding)            
+            self._draw_edges(cr, bounding, highlight_items)            
 
     def get_element(self, x, y):
         for node in self.nodes:
