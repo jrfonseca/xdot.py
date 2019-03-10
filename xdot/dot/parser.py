@@ -453,7 +453,7 @@ class XDotParser(DotParser):
 
             # Parse output order
             try:
-                self.outputorder = attrs['outputorder']
+                self.outputorder = attrs['outputorder'].decode('utf-8')
             except KeyError:
                 pass
                     
