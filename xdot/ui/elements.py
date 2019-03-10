@@ -544,7 +544,7 @@ class Edge(Element):
 
 class Graph(Shape):
 
-    def __init__(self, width=1, height=1, shapes=(), nodes=(), edges=()):
+    def __init__(self, width=1, height=1, shapes=(), nodes=(), edges=(), outputorder='breadthfirst'):
         Shape.__init__(self)
 
         self.width = width
@@ -552,6 +552,7 @@ class Graph(Shape):
         self.shapes = shapes
         self.nodes = nodes
         self.edges = edges
+        self.outputorder = outputorder
 
         self.bounding = Shape._envelope_bounds(
             map(_get_bounding, self.shapes),
@@ -560,6 +561,23 @@ class Graph(Shape):
 
     def get_size(self):
         return self.width, self.height
+
+    def _draw_shapes(self, cr, bounding):
+        for shape in self.shapes:
+            if bounding is None or shape._intersects(bounding):
+                shape._draw(cr, highlight=False, bounding=bounding)
+
+    def _draw_nodes(self, cr, bounding, highlight_items):
+        for node in self.nodes:
+            if bounding is None or node._intersects(bounding):
+                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
+
+    def _draw_edges(self, cr, bounding):
+        for edge in self.edges:
+            if bounding is None or edge._intersects(bounding):
+                should_highlight = any(e in highlight_items
+                                       for e in (edge, edge.src, edge.dst))
+                edge._draw(cr, highlight=should_highlight, bounding=bounding)
 
     def draw(self, cr, highlight_items=None, bounding=None):
         if bounding is not None:
@@ -575,17 +593,13 @@ class Graph(Shape):
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
         cr.set_line_join(cairo.LINE_JOIN_MITER)
 
-        for shape in self.shapes:
-            if bounding is None or shape._intersects(bounding):
-                shape._draw(cr, highlight=False, bounding=bounding)
-        for node in self.nodes:
-            if bounding is None or node._intersects(bounding):
-                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
-        for edge in self.edges:
-            if bounding is None or edge._intersects(bounding):
-                should_highlight = any(e in highlight_items
-                                       for e in (edge, edge.src, edge.dst))
-                edge._draw(cr, highlight=should_highlight, bounding=bounding)
+        self._draw_shapes(cr, bounding)
+        if self.outputorder == 'edgesfirst':
+            self._draw_edges(cr, bounding)
+            self._draw_nodes(cr, bounding, highlight_items)
+        else:
+            self._draw_nodes(cr, bounding, highlight_items)
+            self._draw_edges(cr, bounding)            
 
     def get_element(self, x, y):
         for node in self.nodes:
