@@ -1,0 +1,9 @@
+graph {
+  graph [layout=fdp]
+
+  subgraph cluster_x {
+    label = "hello";
+  }
+
+  cluster_x -- a;
+}
