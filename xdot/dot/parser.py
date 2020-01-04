@@ -354,6 +354,7 @@ class DotParser(Parser):
                 self.consume()
                 node_ids = [id, self.parse_node_id()]
                 while self.lookahead.type == EDGE_OP:
+                    self.consume()
                     node_ids.append(self.parse_node_id())
                 attrs = self.parse_attrs()
                 for i in range(0, len(node_ids) - 1):
