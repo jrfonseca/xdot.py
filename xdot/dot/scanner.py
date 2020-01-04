@@ -54,11 +54,11 @@ class Scanner:
         flags = re.DOTALL
         if self.ignorecase:
             flags |= re.IGNORECASE
-            self.tokens_re = re.compile(
-                b'|'.join([b'(' + regexp + b')'
-                           for type, regexp, test_lit in self.tokens]),
-                flags
-            )
+        self.tokens_re = re.compile(
+            b'|'.join([b'(' + regexp + b')'
+                       for type, regexp, test_lit in self.tokens]),
+            flags
+        )
 
     def next(self, buf, pos):
         if pos >= len(buf):
