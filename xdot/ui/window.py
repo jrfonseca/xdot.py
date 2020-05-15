@@ -168,7 +168,10 @@ class DotWidget(Gtk.DrawingArea):
 
     def update(self):
         if self.openfilename is not None:
-            current_mtime = os.stat(self.openfilename).st_mtime
+            try:
+                current_mtime = os.stat(self.openfilename).st_mtime
+            except OSError:
+                return True
             if current_mtime != self.last_mtime:
                 self.last_mtime = current_mtime
                 self.reload()
