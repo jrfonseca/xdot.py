@@ -336,6 +336,12 @@ class DotWidget(Gtk.DrawingArea):
         if event.keyval == Gdk.KEY_p:
             self.on_print()
             return True
+        if event.keyval == Gdk.KEY_t:
+            # toggle toolbar visibility
+            win = widget.get_toplevel()
+            toolbar = win.uimanager.get_widget("/ToolBar")
+            toolbar.set_visible(not toolbar.get_visible())
+            return True
         return False
 
     print_settings = None
