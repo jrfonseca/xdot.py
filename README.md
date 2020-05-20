@@ -105,6 +105,7 @@ You can also pass the following options:
       F                         find
       Q                         quit
       P                         print
+      T                         toggle toolbar
       Escape                    halt animation
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
