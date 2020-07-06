@@ -469,7 +469,7 @@ class Element(CompoundShape):
 
 class Node(Element):
 
-    def __init__(self, id, x, y, w, h, shapes, url):
+    def __init__(self, id, x, y, w, h, shapes, url, tooltip):
         Element.__init__(self, shapes)
 
         self.id = id
@@ -482,6 +482,7 @@ class Node(Element):
         self.y2 = y + 0.5*h
 
         self.url = url
+        self.tooltip = tooltip
 
     def is_inside(self, x, y):
         return self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2
@@ -510,11 +511,12 @@ def square_distance(x1, y1, x2, y2):
 
 class Edge(Element):
 
-    def __init__(self, src, dst, points, shapes):
+    def __init__(self, src, dst, points, shapes, tooltip):
         Element.__init__(self, shapes)
         self.src = src
         self.dst = dst
         self.points = points
+        self.tooltip = tooltip
 
     RADIUS = 10
 
