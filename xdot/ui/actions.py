@@ -64,15 +64,12 @@ class DragAction(object):
 
 
 class NullAction(DragAction):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    _tooltip_window = Gtk.Window(Gtk.WindowType.POPUP)
+    _tooltip_label = Gtk.Label(xalign=0, yalign=0)
+    _tooltip_item = None
 
-        self._tooltip_window = Gtk.Window(Gtk.WindowType.POPUP)
-        self._tooltip_label = Gtk.Label()
-        self._tooltip_item = None
-
-        self._tooltip_window.add(self._tooltip_label)
-        self._tooltip_label.show()
+    _tooltip_window.add(_tooltip_label)
+    _tooltip_label.show()
 
     def on_motion_notify(self, event):
         if event.is_hint:
@@ -86,22 +83,27 @@ class NullAction(DragAction):
         if item is not None:
             dot_widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND2))
             dot_widget.set_highlight(item.highlight)
-            if item is not self._tooltip_item:
+            if item is not NullAction._tooltip_item:
                 if isinstance(item, Jump) and item.item.tooltip is not None:
-                    self._tooltip_label.set_markup(item.item.tooltip.decode())
-                    self._tooltip_window.show()
+                    NullAction._tooltip_label.set_markup(item.item.tooltip.decode())
+                    NullAction._tooltip_window.resize(
+                      NullAction._tooltip_label.get_preferred_width().natural_width,
+                      NullAction._tooltip_label.get_preferred_height().natural_height
+                    )
+                    NullAction._tooltip_window.show()
                 else:
-                    self._tooltip_window.hide()
-                self._tooltip_item = item
-            if self._tooltip_window.is_visible:
-                pointer = self._tooltip_window.get_screen().get_root_window().get_pointer()
-                self._tooltip_window.move(pointer.x + 15, pointer.y + 10)
+                    NullAction._tooltip_window.hide()
+                    NullAction._tooltip_label.set_markup("")
+                NullAction._tooltip_item = item
+            if NullAction._tooltip_window.is_visible:
+                pointer = NullAction._tooltip_window.get_screen().get_root_window().get_pointer()
+                NullAction._tooltip_window.move(pointer.x + 15, pointer.y + 10)
         else:
             dot_widget.get_window().set_cursor(None)
             dot_widget.set_highlight(None)
-            self._tooltip_window.hide()
-            self._tooltip_label.set_markup("")
-            self._tooltip_item = None
+            NullAction._tooltip_window.hide()
+            NullAction._tooltip_label.set_markup("")
+            NullAction._tooltip_item = None
 
 
 class PanAction(DragAction):
