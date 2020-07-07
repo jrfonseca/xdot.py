@@ -527,7 +527,8 @@ class Edge(Element):
         previous_x, previous_y = first_point
 
         for shape in self.shapes:
-            assert isinstance(shape, BezierShape)
+            if not isinstance(shape, (LineShape, BezierShape)):
+                continue
 
             points_iter = iter(shape.points)
             x0, y0 = next(points_iter)
@@ -539,24 +540,31 @@ class Edge(Element):
                 except StopIteration:
                     break
 
-                x2, y2 = next(points_iter)
-                x3, y3 = next(points_iter)
+                if isinstance(shape, BezierShape):
+                    x2, y2 = next(points_iter)
+                    x3, y3 = next(points_iter)
 
                 t = 0.5
                 step = 0.25
                 previous_d = None
 
                 while True:
-                    x = (1 - t)**3 * x0 + 3*(1 - t)**2*t*x1 + 3*(1 - t)*t**2*x2 + t**3*x3
-                    y = (1 - t)**3 * y0 + 3*(1 - t)**2*t*y1 + 3*(1 - t)*t**2*y2 + t**3*y3
+                    if isinstance(shape, BezierShape):
+                        x = (1 - t)**3 * x0 + 3 * (1 - t)**2 * t * x1 + 3*(1 - t) * t**2 * x2 + t**3 * x3
+                        y = (1 - t)**3 * y0 + 3 * (1 - t)**2 * t * y1 + 3*(1 - t) * t**2 * y2 + t**3 * y3
+
+                    else:
+                        x = x0 * (1 - t) + x1 * t
+                        y = y0 * (1 - t) + y1 * t
+
                     d = math.sqrt(square_distance(x, y, previous_x, previous_y))
 
                     if abs(d - D1) <= D2:
                         result.append((x, y))
                         previous_x = x
                         previous_y = y
-                        step = (1 - t)/4
-                        t = (t + 1)/2
+                        step = (1 - t) / 4
+                        t = (t + 1) / 2
                         previous_d = None
                         continue
 
@@ -572,8 +580,13 @@ class Edge(Element):
                     step *= 0.5
                     previous_d = d
 
-                x0 = x3
-                y0 = y3
+                if isinstance(shape, BezierShape):
+                    x0 = x3
+                    y0 = y3
+
+                else:
+                    x0 = x1
+                    y0 = y1
 
         result.append(self.points[-1])
         return result
