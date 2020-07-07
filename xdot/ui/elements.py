@@ -516,6 +516,68 @@ class Edge(Element):
         self.dst = dst
         self.points = points
 
+        self._curve_points = self._get_curve_points()
+
+    def _get_curve_points(self):
+        D1 = 10  # resolution
+        D2 = D1 / 100  # precision
+
+        first_point = self.points[0]
+        result = [first_point]
+        previous_x, previous_y = first_point
+
+        for shape in self.shapes:
+            assert isinstance(shape, BezierShape)
+
+            points_iter = iter(shape.points)
+            x0, y0 = next(points_iter)
+
+            while True:
+                try:
+                    x1, y1 = next(points_iter)
+
+                except StopIteration:
+                    break
+
+                x2, y2 = next(points_iter)
+                x3, y3 = next(points_iter)
+
+                t = 0.5
+                step = 0.25
+                previous_d = None
+
+                while True:
+                    x = (1 - t)**3 * x0 + 3*(1 - t)**2*t*x1 + 3*(1 - t)*t**2*x2 + t**3*x3
+                    y = (1 - t)**3 * y0 + 3*(1 - t)**2*t*y1 + 3*(1 - t)*t**2*y2 + t**3*y3
+                    d = math.sqrt(square_distance(x, y, previous_x, previous_y))
+
+                    if abs(d - D1) <= D2:
+                        result.append((x, y))
+                        previous_x = x
+                        previous_y = y
+                        step = (1 - t)/4
+                        t = (t + 1)/2
+                        previous_d = None
+                        continue
+
+                    if previous_d is not None and abs(d - previous_d) < D2:
+                        break
+
+                    if d < D1:
+                        t += step
+
+                    else:
+                        t -= step
+
+                    step *= 0.5
+                    previous_d = d
+
+                x0 = x3
+                y0 = y3
+
+        result.append(self.points[-1])
+        return result
+
     RADIUS = 10
 
     def is_inside_begin(self, x, y):
@@ -532,10 +594,18 @@ class Edge(Element):
         return False
 
     def get_jump(self, x, y):
-        if self.is_inside_begin(x, y):
-            return Jump(self, self.dst.x, self.dst.y, highlight=set([self, self.dst]))
-        if self.is_inside_end(x, y):
-            return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
+        for shape in self.shapes:
+            x1, y1, x2, y2 = shape.bounding
+            if x1 <= x and x <= x2 and y1 <= y and y <= y2:
+                break
+
+        else:
+            return None
+
+        for curve_x, curve_y in self._curve_points:
+            if square_distance(x, y, curve_x, curve_y) <= 100:
+                return Jump(self, self.src.x, self.src.y)
+
         return None
 
     def __repr__(self):
@@ -568,9 +638,17 @@ class Graph(Shape):
                 shape._draw(cr, highlight=False, bounding=bounding)
 
     def _draw_nodes(self, cr, bounding, highlight_items):
+        highlight_nodes = []
+        for element in highlight_items:
+            if isinstance(element, Edge):
+                highlight_nodes.append(element.src)
+                highlight_nodes.append(element.dst)
+            else:
+                highlight_nodes.append(element)
+
         for node in self.nodes:
             if bounding is None or node._intersects(bounding):
-                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
+                node._draw(cr, highlight=(node in highlight_nodes), bounding=bounding)
 
     def _draw_edges(self, cr, bounding, highlight_items):
         for edge in self.edges:
