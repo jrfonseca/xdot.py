@@ -26,6 +26,7 @@ from gi.repository import GdkPixbuf
 from gi.repository import Pango
 from gi.repository import PangoCairo
 import cairo
+import numpy
 
 _inf = float('inf')
 _get_bounding = operator.attrgetter('bounding')
@@ -516,81 +517,6 @@ class Edge(Element):
         self.dst = dst
         self.points = points
 
-        self._curve_points = self._get_curve_points()
-
-    def _get_curve_points(self):
-        D1 = 10  # resolution
-        D2 = D1 / 100  # precision
-
-        first_point = self.points[0]
-        result = [first_point]
-        previous_x, previous_y = first_point
-
-        for shape in self.shapes:
-            if not isinstance(shape, (LineShape, BezierShape)):
-                continue
-
-            points_iter = iter(shape.points)
-            x0, y0 = next(points_iter)
-
-            while True:
-                try:
-                    x1, y1 = next(points_iter)
-
-                except StopIteration:
-                    break
-
-                if isinstance(shape, BezierShape):
-                    x2, y2 = next(points_iter)
-                    x3, y3 = next(points_iter)
-
-                t = 0.5
-                step = 0.25
-                previous_d = None
-
-                while True:
-                    if isinstance(shape, BezierShape):
-                        x = (1 - t)**3 * x0 + 3 * (1 - t)**2 * t * x1 + 3*(1 - t) * t**2 * x2 + t**3 * x3
-                        y = (1 - t)**3 * y0 + 3 * (1 - t)**2 * t * y1 + 3*(1 - t) * t**2 * y2 + t**3 * y3
-
-                    else:
-                        x = x0 * (1 - t) + x1 * t
-                        y = y0 * (1 - t) + y1 * t
-
-                    d = math.sqrt(square_distance(x, y, previous_x, previous_y))
-
-                    if abs(d - D1) <= D2:
-                        result.append((x, y))
-                        previous_x = x
-                        previous_y = y
-                        step = (1 - t) / 4
-                        t = (t + 1) / 2
-                        previous_d = None
-                        continue
-
-                    if previous_d is not None and abs(d - previous_d) < D2:
-                        break
-
-                    if d < D1:
-                        t += step
-
-                    else:
-                        t -= step
-
-                    step *= 0.5
-                    previous_d = d
-
-                if isinstance(shape, BezierShape):
-                    x0 = x3
-                    y0 = y3
-
-                else:
-                    x0 = x1
-                    y0 = y1
-
-        result.append(self.points[-1])
-        return result
-
     RADIUS = 10
 
     def is_inside_begin(self, x, y):
@@ -609,17 +535,77 @@ class Edge(Element):
     def get_jump(self, x, y):
         for shape in self.shapes:
             x1, y1, x2, y2 = shape.bounding
-            if x1 <= x and x <= x2 and y1 <= y and y <= y2:
+            if (x1 - self.RADIUS) <= x and x <= (x2 + self.RADIUS) and (y1 - self.RADIUS) <= y and y <= (y2 + self.RADIUS):
                 break
 
         else:
             return None
 
-        for curve_x, curve_y in self._curve_points:
-            if square_distance(x, y, curve_x, curve_y) <= 100:
-                return Jump(self, self.src.x, self.src.y)
+        if self._get_distance(x, y) <= self.RADIUS**2:
+            return Jump(self, self.src.x, self.src.y)
 
         return None
+
+    def _get_distance(self, x, y):
+        result = float('inf')
+
+        for shape in self.shapes:
+            if not isinstance(shape, BezierShape):
+                continue
+
+            points_iter = iter(shape.points)
+            x0, y0 = next(points_iter)
+
+            while True:
+                try:
+                    x1, y1 = next(points_iter)
+
+                except StopIteration:
+                    break
+
+                x2, y2 = next(points_iter)
+                x3, y3 = next(points_iter)
+
+                _e1 = -5
+                _e2 = (x0 - 3 * x1 + 3 * x2 - x3)
+                _e3 = (y0 - 3 * y1 + 3 * y2 - y3)
+                _e4 = 2 * x1
+                _e5 = 2 * y1
+                _e6 = x0**2
+                _e7 = y0**2
+                _e8 = -2
+                _e9 = (x0 - _e4 + x2)
+                _e10 = (y0 - _e5 + y2)
+                _e11 = 2 * x0
+                _e12 = 2 * y0
+                _e13 = 5 * _e6
+                _e14 = 5 * _e7
+                _e15 = x1**2
+                _e16 = y1**2
+                coefficients = [
+                    (x - x0) * (x0 - x1) + (y - y0) * (y0 - y1),
+                    _e13 + 3 * _e15 + _e11 * (_e1 * x1 + x2) - 2 * x * _e9 + _e14 + 3 * _e16 + _e12 * (_e1 * y1 + y2) - 2 * y * _e10,
+                    -10 * _e6 + 9 * x1 * (_e8 * x1 + x2) + x * _e2 + x0 * (30 * x1 - 12 * x2 + x3) - 10 * _e7 + 9 * y1 * (_e8 * y1 + y2) + y * _e3 + y0 * (30 * y1 - 12 * y2 + y3),
+                    2 * (_e13 + 18 * _e15 + 3 * x2**2 + _e4 * (-9 * x2 + x3) - _e11 * (10 * x1 - 6 * x2 + x3) + _e14 + 3 * (6 * _e16 - 6 * y1 * y2 + y2**2) + _e5 * y3 - _e12 * (10 * y1 - 6 * y2 + y3)),
+                    _e1 * _e9 * _e2 - 5 * _e10 * _e3,
+                    _e2**2 + _e3**2
+                ]
+                coefficients.reverse()
+
+                for t in numpy.roots(coefficients):
+                    if not (0 <= t.real and t.real <= 1 and abs(t.imag) < 1e-6):
+                        continue
+
+                    t = t.real
+
+                    distance = ((1 - t)**3 * x0 + 3 * (1 - t)**2 * t * x1 + 3 * (1 - t) * t**2 * x2 + t**3 * x3 - x)**2 + ((1 - t)**3 * y0 + 3 * (1 - t)**2 * t * y1 + 3 * (1 - t) * t**2 * y2 + t**3 * y3 - y)**2
+                    if distance < result:
+                        result = distance
+
+                x0 = x3
+                y0 = y3
+
+        return result
 
     def __repr__(self):
         return "<Edge %s -> %s>" % (self.src, self.dst)
