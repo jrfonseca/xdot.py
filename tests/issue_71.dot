@@ -1,0 +1,17 @@
+digraph {
+   Src [tooltip="Source"];
+   Dst [tooltip="Destination"];
+   Src -> Dst [
+      headlabel="H"
+      headtooltip="Head"
+      headURL="headURL"
+      edgelabel="E"
+      edgetooltip="Edge"
+      edgeURL="edgeURL"
+      taillabel="T"
+      tailtooltip="Tail"
+      tailURL="tailURL"
+      label="L"
+      labeltooltip="Label"
+   ]
+}
