@@ -64,6 +64,9 @@ class DragAction(object):
 
 
 class NullAction(DragAction):
+
+    # FIXME: The NullAction class is probably not the best place to hold this
+    # sort mutable global state.
     _tooltip_window = Gtk.Window(Gtk.WindowType.POPUP)
     _tooltip_label = Gtk.Label(xalign=0, yalign=0)
     _tooltip_item = None
@@ -84,6 +87,7 @@ class NullAction(DragAction):
             dot_widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND2))
             dot_widget.set_highlight(item.highlight)
             if item is not NullAction._tooltip_item:
+                # TODO: Should fold this into a method.
                 if isinstance(item, Jump) and item.item.tooltip is not None:
                     NullAction._tooltip_label.set_markup(item.item.tooltip.decode())
                     NullAction._tooltip_window.resize(
