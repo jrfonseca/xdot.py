@@ -26,6 +26,7 @@ from gi.repository import GdkPixbuf
 from gi.repository import Pango
 from gi.repository import PangoCairo
 import cairo
+import numpy
 
 _inf = float('inf')
 _get_bounding = operator.attrgetter('bounding')
@@ -67,6 +68,9 @@ class Shape:
 
     def search_text(self, regexp):
         return False
+
+    def get_smallest_distance(self, x, y):
+        return None
 
     @staticmethod
     def _bounds_from_points(points):
@@ -408,6 +412,67 @@ class BezierShape(Shape):
             cr.set_source_rgba(*pen.color)
             cr.stroke()
 
+    def get_smallest_distance(self, x, y):
+        min_squared_distance = float('inf')
+
+        points_iter = iter(self.points)
+        x0, y0 = next(points_iter)
+
+        while True:
+            try:
+                x1, y1 = next(points_iter)
+
+            except StopIteration:
+                break
+
+            x2, y2 = next(points_iter)
+            x3, y3 = next(points_iter)
+
+            _e1 = -5
+            _e2 = (x0 - 3 * x1 + 3 * x2 - x3)
+            _e3 = (y0 - 3 * y1 + 3 * y2 - y3)
+            _e4 = 2 * x1
+            _e5 = 2 * y1
+            _e6 = x0**2
+            _e7 = y0**2
+            _e8 = -2
+            _e9 = (x0 - _e4 + x2)
+            _e10 = (y0 - _e5 + y2)
+            _e11 = 2 * x0
+            _e12 = 2 * y0
+            _e13 = 5 * _e6
+            _e14 = 5 * _e7
+            _e15 = x1**2
+            _e16 = y1**2
+            coefficients = [
+                (x - x0) * (x0 - x1) + (y - y0) * (y0 - y1),
+                _e13 + 3 * _e15 + _e11 * (_e1 * x1 + x2) - 2 * x * _e9 + _e14 + 3 * _e16 + _e12 * (_e1 * y1 + y2) - 2 * y * _e10,
+                -10 * _e6 + 9 * x1 * (_e8 * x1 + x2) + x * _e2 + x0 * (30 * x1 - 12 * x2 + x3) - 10 * _e7 + 9 * y1 * (_e8 * y1 + y2) + y * _e3 + y0 * (30 * y1 - 12 * y2 + y3),
+                2 * (_e13 + 18 * _e15 + 3 * x2**2 + _e4 * (-9 * x2 + x3) - _e11 * (10 * x1 - 6 * x2 + x3) + _e14 + 3 * (6 * _e16 - 6 * y1 * y2 + y2**2) + _e5 * y3 - _e12 * (10 * y1 - 6 * y2 + y3)),
+                _e1 * _e9 * _e2 - 5 * _e10 * _e3,
+                _e2**2 + _e3**2
+            ]
+            coefficients.reverse()
+
+            for t in numpy.roots(coefficients):
+                if 1e-6 < abs(t.imag):
+                    continue
+
+                t = t.real
+                if t < 0:
+                    t = 0
+                elif 1 < t:
+                    t = 1
+
+                squared_distance = ((1 - t)**3 * x0 + 3 * (1 - t)**2 * t * x1 + 3 * (1 - t) * t**2 * x2 + t**3 * x3 - x)**2 + ((1 - t)**3 * y0 + 3 * (1 - t)**2 * t * y1 + 3 * (1 - t) * t**2 * y2 + t**3 * y3 - y)**2
+                if squared_distance < min_squared_distance:
+                    min_squared_distance = squared_distance
+
+            x0 = x3
+            y0 = y3
+
+        return math.sqrt(min_squared_distance)
+
 
 class CompoundShape(Shape):
 
@@ -534,10 +599,19 @@ class Edge(Element):
         return False
 
     def get_jump(self, x, y):
-        if self.is_inside_begin(x, y):
-            return Jump(self, self.dst.x, self.dst.y, highlight=set([self, self.dst]))
-        if self.is_inside_end(x, y):
-            return Jump(self, self.src.x, self.src.y, highlight=set([self, self.src]))
+        for shape in self.shapes:
+            x1, y1, x2, y2 = shape.bounding
+            if (x1 - self.RADIUS) <= x and x <= (x2 + self.RADIUS) and (y1 - self.RADIUS) <= y and y <= (y2 + self.RADIUS):
+                break
+
+        else:
+            return None
+
+        for shape in self.shapes:
+            distance = shape.get_smallest_distance(x, y)
+            if distance is not None and distance <= self.RADIUS:
+                return Jump(self, self.src.x, self.src.y)
+
         return None
 
     def __repr__(self):
@@ -570,9 +644,17 @@ class Graph(Shape):
                 shape._draw(cr, highlight=False, bounding=bounding)
 
     def _draw_nodes(self, cr, bounding, highlight_items):
+        highlight_nodes = []
+        for element in highlight_items:
+            if isinstance(element, Edge):
+                highlight_nodes.append(element.src)
+                highlight_nodes.append(element.dst)
+            else:
+                highlight_nodes.append(element)
+
         for node in self.nodes:
             if bounding is None or node._intersects(bounding):
-                node._draw(cr, highlight=(node in highlight_items), bounding=bounding)
+                node._draw(cr, highlight=(node in highlight_nodes), bounding=bounding)
 
     def _draw_edges(self, cr, bounding, highlight_items):
         for edge in self.edges:
