@@ -672,6 +672,7 @@ class DotWindow(Gtk.Window):
         dot_widget = self.dotwidget
         if not entry_text:
             dot_widget.set_highlight(None, search=True)
+            self.set_focus(self.dotwidget)
             return
 
         found_items = self.find_text(entry_text)
