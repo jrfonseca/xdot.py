@@ -55,5 +55,5 @@ setup(
     ],
 
     # This is true, but doesn't work realiably
-    #install_requires=['gi', 'gi-cairo'],
+    #install_requires=['gi', 'gi-cairo', 'numpy'],
 )

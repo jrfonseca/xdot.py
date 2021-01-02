@@ -51,7 +51,9 @@ Requirements
 
  * [PyGObject bindings for GTK3](https://pygobject.readthedocs.io)
 
- * [Graphviz](http://www.graphviz.org/Download.php)
+ * [NumPy](https://numpy.org/)
+
+ * [Graphviz](https://graphviz.org/download/)
 
 Windows users
 -------------
@@ -60,16 +62,18 @@ Download and install:
 
  * [Python for Windows](https://www.python.org/downloads/windows/)
 
- * [PyGObject bindings for GTK3](https://wiki.gnome.org/action/show/Projects/PyGObject)
+ * [PyGObject bindings for GTK3](https://pygobject.readthedocs.io/en/latest/getting_started.html#windows-getting-started)
 
- * [Graphviz for Windows](http://www.graphviz.org/Download_windows.php)
+ * `pip install numpy`
+
+ * [Graphviz for Windows](https://graphviz.org/download/)
 
 Debian/Ubuntu users
 -------------------
 
 Run:
 
-    apt-get install gir1.2-gtk-3.0 python3-gi python3-gi-cairo graphviz
+    apt install gir1.2-gtk-3.0 python3-gi python3-gi-cairo python3-numpy graphviz
 
 Usage
 =====
