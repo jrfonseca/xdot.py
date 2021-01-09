@@ -73,7 +73,8 @@ class DotWidget(Gtk.DrawingArea):
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK |
                         Gdk.EventMask.POINTER_MOTION_HINT_MASK |
                         Gdk.EventMask.BUTTON_RELEASE_MASK |
-                        Gdk.EventMask.SCROLL_MASK)
+                        Gdk.EventMask.SCROLL_MASK |
+                        Gdk.EventMask.SMOOTH_SCROLL_MASK)
         self.connect("motion-notify-event", self.on_area_motion_notify)
         self.connect("scroll-event", self.on_area_scroll_event)
         self.connect("size-allocate", self.on_area_size_allocate)
@@ -439,8 +440,12 @@ class DotWidget(Gtk.DrawingArea):
             self.zoom_image(self.zoom_ratio * self.ZOOM_INCREMENT,
                             pos=(event.x, event.y))
             return True
-        if event.direction == Gdk.ScrollDirection.DOWN:
+        elif event.direction == Gdk.ScrollDirection.DOWN:
             self.zoom_image(self.zoom_ratio / self.ZOOM_INCREMENT,
+                            pos=(event.x, event.y))
+        else:
+            deltas = event.get_scroll_deltas()
+            self.zoom_image(self.zoom_ratio * (1 - deltas.delta_y / 10),
                             pos=(event.x, event.y))
             return True
         return False
