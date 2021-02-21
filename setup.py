@@ -54,6 +54,9 @@ setup(
         'Topic :: Multimedia :: Graphics :: Viewers',
     ],
 
-    # This is true, but doesn't work realiably
-    #install_requires=['gi', 'gi-cairo', 'numpy'],
+    install_requires=[
+        # This is true, but doesn't work realiably
+        #'PyGObject',
+        'numpy'
+    ],
 )
