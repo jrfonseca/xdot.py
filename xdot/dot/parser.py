@@ -488,11 +488,12 @@ class XDotParser(DotParser):
             pos = attrs['pos']
         except KeyError:
             # Node without pos attribute, most likely a subgraph.  We need to
-            # create a Node object nevertheless, so that any edges to/from it
-            # don't get lost.
-            # TODO: Extract the position from subgraph > graph > bb attribute.
-            node = elements.Node(id, 0.0, 0.0, 0.0, 0.0, [], None, None)
-            self.node_by_name[id] = node
+            # create a Node object nevertheless, when one doesn't exist
+            # already, so that any edges to/from it don't get lost.
+            if id not in self.node_by_name:
+                # TODO: Extract the position from subgraph > graph > bb attribute.
+                node = elements.Node(id, 0.0, 0.0, 0.0, 0.0, [], None, None)
+                self.node_by_name[id] = node
             return
 
         x, y = self.parse_node_pos(pos)

@@ -1,0 +1,10 @@
+digraph {
+  {
+    node [ shape=box ]
+    a
+    b
+  }
+  {
+    a -> b
+  }
+}
