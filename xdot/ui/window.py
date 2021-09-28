@@ -56,6 +56,7 @@ class DotWidget(Gtk.DrawingArea):
     }
 
     filter = 'dot'
+    graphviz_version = None
 
     def __init__(self):
         Gtk.DrawingArea.__init__(self)
@@ -100,6 +101,7 @@ class DotWidget(Gtk.DrawingArea):
 
     def set_filter(self, filter):
         self.filter = filter
+        self.graphviz_version = None
 
     def run_filter(self, dotcode):
         if not self.filter:
@@ -153,7 +155,14 @@ class DotWidget(Gtk.DrawingArea):
 
     def set_xdotcode(self, xdotcode, center=True):
         assert isinstance(xdotcode, bytes)
-        parser = XDotParser(xdotcode)
+        if self.graphviz_version is None:
+            stdout = subprocess.check_output([self.filter, '-V'], stderr=subprocess.STDOUT)
+            stdout = stdout.rstrip()
+            mo = re.match(br'^.* - .* version (?P<version>.*) \(.*\)$', stdout)
+            assert mo
+            self.graphviz_version = mo.group('version').decode('ascii')
+
+        parser = XDotParser(xdotcode, graphviz_version=self.graphviz_version)
         self.graph = parser.parse()
         self.zoom_image(self.zoom_ratio, center=center)
 

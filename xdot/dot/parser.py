@@ -14,7 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import colorsys
+import re
 import sys
+
+from distutils.version import LooseVersion
 
 from .lexer import ParseError, DotLexer
 
@@ -85,7 +88,14 @@ class XDotAttrParser:
     - http://www.graphviz.org/doc/info/output.html#d:xdot
     """
 
-    def __init__(self, parser, buf):
+    def __init__(self, parser, buf, broken_backslashes):
+
+        # `\` should be escaped as `\\`, but older versions of graphviz xdot
+        # output failed to properly escape it.  See also
+        # https://github.com/jrfonseca/xdot.py/issues/92
+        if not broken_backslashes:
+            buf = re.sub(br'\\(.)', br'\1', buf)
+
         self.parser = parser
         self.buf = buf
         self.pos = 0
@@ -427,9 +437,15 @@ class XDotParser(DotParser):
 
     XDOTVERSION = '1.7'
 
-    def __init__(self, xdotcode):
+    def __init__(self, xdotcode, graphviz_version=None):
         lexer = DotLexer(buf=xdotcode)
         DotParser.__init__(self, lexer)
+
+        # https://github.com/jrfonseca/xdot.py/issues/92
+        self.broken_backslashes = False
+        if graphviz_version is not None and \
+                LooseVersion(graphviz_version) < LooseVersion("2.46.0"):
+            self.broken_backslashes = True
 
         self.nodes = []
         self.edges = []
@@ -480,7 +496,7 @@ class XDotParser(DotParser):
 
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
             if attr in attrs:
-                parser = XDotAttrParser(self, attrs[attr])
+                parser = XDotAttrParser(self, attrs[attr], self.broken_backslashes)
                 self.shapes.extend(parser.parse())
 
     def handle_node(self, id, attrs):
@@ -502,7 +518,7 @@ class XDotParser(DotParser):
         shapes = []
         for attr in ("_draw_", "_ldraw_"):
             if attr in attrs:
-                parser = XDotAttrParser(self, attrs[attr])
+                parser = XDotAttrParser(self, attrs[attr], self.broken_backslashes)
                 shapes.extend(parser.parse())
         try:
             url = attrs['URL']
@@ -525,7 +541,7 @@ class XDotParser(DotParser):
         shapes = []
         for attr in ("_draw_", "_ldraw_", "_hdraw_", "_tdraw_", "_hldraw_", "_tldraw_"):
             if attr in attrs:
-                parser = XDotAttrParser(self, attrs[attr])
+                parser = XDotAttrParser(self, attrs[attr], self.broken_backslashes)
                 shapes.extend(parser.parse())
         if shapes:
             src = self.node_by_name[src_id]
