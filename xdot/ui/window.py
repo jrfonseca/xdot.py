@@ -591,9 +591,9 @@ class DotWindow(Gtk.Window):
 
         # Create actions
         actiongroup.add_actions((
-            ('Open', Gtk.STOCK_OPEN, None, None, None, self.on_open),
-            ('Export', Gtk.STOCK_SAVE_AS, None, None, "Save graph as picture.", self.on_export),
-            ('Reload', Gtk.STOCK_REFRESH, None, None, None, self.on_reload),
+            ('Open', Gtk.STOCK_OPEN, None, None, "Open dot-file", self.on_open),
+            ('Export', Gtk.STOCK_SAVE_AS, None, None, "Export graph to other format", self.on_export),
+            ('Reload', Gtk.STOCK_REFRESH, None, None, "Reload graph", self.on_reload),
             ('Print', Gtk.STOCK_PRINT, None, None,
              "Prints the currently visible part of the graph", self.dotwidget.on_print),
             ('ZoomIn', Gtk.STOCK_ZOOM_IN, None, None, None, self.dotwidget.on_zoom_in),
@@ -764,12 +764,23 @@ class DotWindow(Gtk.Window):
         subprocess.check_call(cmd)
 
     def on_export(self, action):
+        
+        if self.dotwidget.openfilename is None:
+            return
+        
+        default_filter = "PNG image"
+    
         output_formats = {
-            "PNG image": "png",
-            "SVG image": "svg",
-            "PDF image": "pdf",
+            "dot file": "dot",
             "GIF image": "gif",
-            "PDF image": "pdf",
+            "JPG image": "jpg",
+            "JSON": "json",
+            "PDF": "pdf",
+            "PNG image": "png",
+            "PostScript": "ps",
+            "SVG image": "svg",
+            "XFIG image": "fig",
+            "xdot file": "xdot",
         }
         buttons = (
             Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
@@ -791,7 +802,9 @@ class DotWindow(Gtk.Window):
             filter_.set_name(name)
             filter_.add_pattern('*.' + ext)
             chooser.add_filter(filter_)
-        
+            if name == default_filter:
+                chooser.set_filter(filter_)
+
         if chooser.run() == Gtk.ResponseType.OK:
             filename = chooser.get_filename()
             format_ = output_formats[chooser.get_filter().get_name()]
