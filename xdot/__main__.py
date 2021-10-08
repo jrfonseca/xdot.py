@@ -36,6 +36,7 @@ Shortcuts:
   F                         find
   Q                         quit
   P                         print
+  T                         toggle show/hide toolbar
   Escape                    halt animation
   Ctrl-drag                 zoom in/out
   Shift-drag                zooms an area
