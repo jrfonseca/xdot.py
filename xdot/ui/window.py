@@ -568,6 +568,7 @@ class DotWindow(Gtk.Window):
 
         window.set_title(self.base_title)
         window.set_default_size(width, height)
+        window.set_wmclass("xdot", "xdot")
         vbox = Gtk.VBox()
         window.add(vbox)
 
