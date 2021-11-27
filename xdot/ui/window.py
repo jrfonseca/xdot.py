@@ -725,7 +725,7 @@ class DotWindow(Gtk.Window):
 
     def on_open(self, action):
         chooser = Gtk.FileChooserDialog(parent=self,
-                                        title="Open dot File",
+                                        title="Open Graphviz File",
                                         action=Gtk.FileChooserAction.OPEN,
                                         buttons=(Gtk.STOCK_CANCEL,
                                                  Gtk.ResponseType.CANCEL,
@@ -734,7 +734,8 @@ class DotWindow(Gtk.Window):
         chooser.set_default_response(Gtk.ResponseType.OK)
         chooser.set_current_folder(self.last_open_dir)
         filter = Gtk.FileFilter()
-        filter.set_name("Graphviz dot files")
+        filter.set_name("Graphviz files")
+        filter.add_pattern("*.gv")
         filter.add_pattern("*.dot")
         chooser.add_filter(filter)
         filter = Gtk.FileFilter()
