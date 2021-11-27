@@ -84,6 +84,7 @@ class NullAction(DragAction):
         if item is None:
             item = dot_widget.get_jump(x, y)
         if item is not None:
+            NullAction._tooltip_window.set_transient_for(dot_widget.get_toplevel())
             dot_widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND2))
             dot_widget.set_highlight(item.highlight)
             if item is not NullAction._tooltip_item:
