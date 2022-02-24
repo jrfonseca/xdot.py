@@ -640,7 +640,7 @@ class DotWindow(Gtk.Window):
 
         # Add Find text search
         find_toolitem = uimanager.get_widget('/ToolBar/Find')
-        self.textentry = Gtk.Entry(max_length=20)
+        self.textentry = Gtk.Entry()
         self.textentry.set_icon_from_stock(0, Gtk.STOCK_FIND)
         find_toolitem.add(self.textentry)
 
