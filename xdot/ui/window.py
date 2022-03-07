@@ -355,6 +355,9 @@ class DotWidget(Gtk.DrawingArea):
             toolbar = win.uimanager.get_widget("/ToolBar")
             toolbar.set_visible(not toolbar.get_visible())
             return True
+        if event.keyval == Gdk.KEY_w:
+            self.zoom_to_fit()
+            return True
         return False
 
     print_settings = None
