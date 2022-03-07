@@ -133,6 +133,7 @@ class DotWidget(Gtk.DrawingArea):
         # By default DOT language is UTF-8, but it accepts other encodings
         assert isinstance(dotcode, bytes)
         xdotcode = self.run_filter(dotcode)
+            
         if xdotcode is None:
             return False
         try:
@@ -155,6 +156,7 @@ class DotWidget(Gtk.DrawingArea):
 
     def set_xdotcode(self, xdotcode, center=True):
         assert isinstance(xdotcode, bytes)
+
         if self.graphviz_version is None:
             stdout = subprocess.check_output([self.filter, '-V'], stderr=subprocess.STDOUT)
             stdout = stdout.rstrip()
@@ -537,6 +539,7 @@ class DotWindow(Gtk.Window):
     <ui>
         <toolbar name="ToolBar">
             <toolitem action="Open"/>
+            <toolitem action="Export"/>
             <toolitem action="Reload"/>
             <toolitem action="Print"/>
             <separator/>
@@ -589,8 +592,9 @@ class DotWindow(Gtk.Window):
 
         # Create actions
         actiongroup.add_actions((
-            ('Open', Gtk.STOCK_OPEN, None, None, None, self.on_open),
-            ('Reload', Gtk.STOCK_REFRESH, None, None, None, self.on_reload),
+            ('Open', Gtk.STOCK_OPEN, None, None, "Open dot-file", self.on_open),
+            ('Export', Gtk.STOCK_SAVE_AS, None, None, "Export graph to other format", self.on_export),
+            ('Reload', Gtk.STOCK_REFRESH, None, None, "Reload graph", self.on_reload),
             ('Print', Gtk.STOCK_PRINT, None, None,
              "Prints the currently visible part of the graph", self.dotwidget.on_print),
             ('ZoomIn', Gtk.STOCK_ZOOM_IN, None, None, None, self.dotwidget.on_zoom_in),
@@ -636,7 +640,7 @@ class DotWindow(Gtk.Window):
 
         # Add Find text search
         find_toolitem = uimanager.get_widget('/ToolBar/Find')
-        self.textentry = Gtk.Entry(max_length=20)
+        self.textentry = Gtk.Entry()
         self.textentry.set_icon_from_stock(0, Gtk.STOCK_FIND)
         find_toolitem.add(self.textentry)
 
@@ -725,7 +729,7 @@ class DotWindow(Gtk.Window):
 
     def on_open(self, action):
         chooser = Gtk.FileChooserDialog(parent=self,
-                                        title="Open dot File",
+                                        title="Open Graphviz File",
                                         action=Gtk.FileChooserAction.OPEN,
                                         buttons=(Gtk.STOCK_CANCEL,
                                                  Gtk.ResponseType.CANCEL,
@@ -734,7 +738,8 @@ class DotWindow(Gtk.Window):
         chooser.set_default_response(Gtk.ResponseType.OK)
         chooser.set_current_folder(self.last_open_dir)
         filter = Gtk.FileFilter()
-        filter.set_name("Graphviz dot files")
+        filter.set_name("Graphviz files")
+        filter.add_pattern("*.gv")
         filter.add_pattern("*.dot")
         chooser.add_filter(filter)
         filter = Gtk.FileFilter()
@@ -748,6 +753,68 @@ class DotWindow(Gtk.Window):
             self.open_file(filename)
         else:
             chooser.destroy()
+   
+    def export_file(self, filename, format_):
+        if not filename.endswith("." + format_):
+            filename += '.' + format_
+        cmd = [
+            self.dotwidget.filter, # program name, usually "dot"
+            '-T' + format_,
+            '-o', filename,
+            self.dotwidget.openfilename,
+        ]
+        subprocess.check_call(cmd)
+
+    def on_export(self, action):
+        
+        if self.dotwidget.openfilename is None:
+            return
+        
+        default_filter = "PNG image"
+    
+        output_formats = {
+            "dot file": "dot",
+            "GIF image": "gif",
+            "JPG image": "jpg",
+            "JSON": "json",
+            "PDF": "pdf",
+            "PNG image": "png",
+            "PostScript": "ps",
+            "SVG image": "svg",
+            "XFIG image": "fig",
+            "xdot file": "xdot",
+        }
+        buttons = (
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        chooser = Gtk.FileChooserDialog(
+            parent=self,
+            title="Export to other file format.",
+            action=Gtk.FileChooserAction.SAVE,
+            buttons=buttons) 
+        chooser.set_default_response(Gtk.ResponseType.OK)
+        chooser.set_current_folder(self.last_open_dir)
+        
+        openfilename = os.path.basename(self.dotwidget.openfilename)
+        openfileroot = os.path.splitext(openfilename)[0]
+        chooser.set_current_name(openfileroot)
+
+        for name, ext in output_formats.items():
+            filter_ = Gtk.FileFilter()
+            filter_.set_name(name)
+            filter_.add_pattern('*.' + ext)
+            chooser.add_filter(filter_)
+            if name == default_filter:
+                chooser.set_filter(filter_)
+
+        if chooser.run() == Gtk.ResponseType.OK:
+            filename = chooser.get_filename()
+            format_ = output_formats[chooser.get_filter().get_name()]
+            chooser.destroy()
+            self.export_file(filename, format_)
+        else:
+            chooser.destroy()
+	
 
     def on_reload(self, action):
         self.dotwidget.reload()
