@@ -110,6 +110,7 @@ You can also pass the following options:
       Q                         quit
       P                         print
       T                         toggle toolbar
+      W                         zoom to fit
       Escape                    halt animation
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
