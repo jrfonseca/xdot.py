@@ -126,7 +126,6 @@ class DotWidget(Gtk.DrawingArea):
             sys.stderr.write(error + '\n')
         if p.returncode != 0:
             self.error_dialog(error)
-            return None
         return xdotcode
 
     def _set_dotcode(self, dotcode, filename=None, center=True):
