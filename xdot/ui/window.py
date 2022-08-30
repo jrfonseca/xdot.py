@@ -671,6 +671,7 @@ class DotWindow(Gtk.Window):
         return sorted(found_items, key=operator.methodcaller('get_text'))
 
     def textentry_changed(self, widget, entry):
+        self.find_count.set_label('')
         self.find_index = 0
         self.find_next_toolitem.set_sensitive(False)
         entry_text = entry.get_text()
@@ -683,8 +684,6 @@ class DotWindow(Gtk.Window):
         dot_widget.set_highlight(found_items, search=True)
         if found_items:
             self.find_count.set_label('%d nodes found' % len(found_items))
-        else:
-            self.find_count.set_label('')
 
     def textentry_activate(self, widget, entry):
         self.find_index = 0
