@@ -39,7 +39,7 @@ from gi.repository import Gdk
 
 from . import actions
 from ..dot.lexer import ParseError
-from ..dot.parser import XDotParser
+from .xdotparser import XDotParser
 from . import animation
 from . import actions
 from .elements import Graph
