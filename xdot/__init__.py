@@ -1,5 +1,5 @@
 #
-# Copyright 2008-2017 Jose Fonseca
+# Copyright 2008-2022 Jose Fonseca
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published
@@ -19,11 +19,6 @@
 
 import sys
 assert sys.version_info.major >= 3
-
-__all__ = ['dot', 'ui']
-
-from . import dot
-from . import ui
-from .ui import DotWidget, DotWindow
+del sys
 
 __author__ = "Jose Fonseca et al"

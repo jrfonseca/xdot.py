@@ -22,13 +22,13 @@ gi.require_version('Gtk', '3.0')
 
 from gi.repository import Gtk
 
-import xdot
+import xdot.ui
 
 
-class MyDotWindow(xdot.DotWindow):
+class MyDotWindow(xdot.ui.DotWindow):
 
     def __init__(self):
-        xdot.DotWindow.__init__(self)
+        xdot.ui.DotWindow.__init__(self)
         self.dotwidget.connect('clicked', self.on_url_clicked)
 
     def on_url_clicked(self, widget, url, event):
