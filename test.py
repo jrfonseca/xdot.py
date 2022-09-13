@@ -34,7 +34,7 @@ def test(arg):
     from gi.repository import Gtk
     from gi.repository import Gdk
 
-    from xdot import DotWidget, DotWindow
+    from xdot.ui import DotWidget, DotWindow
 
 
     class TestDotWidget(DotWidget):
