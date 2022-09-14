@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
 
-  ubuntu-22.04:
+  ubuntu-22_04:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v2
@@ -19,7 +19,7 @@ jobs:
     - name: test
       run: .github/scripts/test.sh
 
-  ubuntu-20.04:
+  ubuntu-20_04:
     runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
