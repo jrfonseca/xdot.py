@@ -50,9 +50,9 @@ class DotWidget(Gtk.DrawingArea):
 
     # TODO GTK3: Second argument has to be of type Gdk.EventButton instead of object.
     __gsignals__ = {
-        'clicked': (GObject.SIGNAL_RUN_LAST, None, (str, object)),
-        'error': (GObject.SIGNAL_RUN_LAST, None, (str,)),
-        'history': (GObject.SIGNAL_RUN_LAST, None, (bool, bool))
+        'clicked': (GObject.SignalFlags.RUN_LAST, None, (str, object)),
+        'error': (GObject.SignalFlags.RUN_LAST, None, (str,)),
+        'history': (GObject.SignalFlags.RUN_LAST, None, (bool, bool))
     }
 
     filter = 'dot'
