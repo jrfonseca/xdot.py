@@ -67,7 +67,7 @@ class NullAction(DragAction):
 
     # FIXME: The NullAction class is probably not the best place to hold this
     # sort mutable global state.
-    _tooltip_window = Gtk.Window.new(Gtk.WindowType.POPUP)
+    _tooltip_window = Gtk.Window.new(type=Gtk.WindowType.POPUP)
     _tooltip_label = Gtk.Label(xalign=0, yalign=0)
     _tooltip_item = None
 
