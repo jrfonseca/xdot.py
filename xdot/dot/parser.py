@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sys
+
 from .lexer import ParseError, DotLexer
 
 
@@ -90,7 +92,15 @@ class DotParser(Parser):
 
     def parse(self):
         self.parse_graph()
-        self.match(EOF)
+        if self.lookahead.type != EOF:
+            # Multiple graphs beyond the first are ignored
+            # https://github.com/jrfonseca/xdot.py/issues/112
+            sys.stderr.write('warning: {}:{}:{}: ignoring extra token {}\n'.format(
+                self.lexer.filename,
+                self.lookahead.line,
+                self.lookahead.col,
+                self.lookahead.text
+            ))
 
     def parse_graph(self):
         if self.lookahead.type == STRICT:
