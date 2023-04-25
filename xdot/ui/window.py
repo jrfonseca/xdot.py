@@ -664,7 +664,11 @@ class DotWindow(Gtk.Window):
     def find_text(self, entry_text):
         found_items = []
         dot_widget = self.dotwidget
-        regexp = re.compile(entry_text)
+        try:
+            regexp = re.compile(entry_text)
+        except re.error as err:
+            sys.stderr.write('warning: re.compile() failed with error "%s"\n' % err)
+            return []
         for element in dot_widget.graph.nodes + dot_widget.graph.edges:
             if element.search_text(regexp):
                 found_items.append(element)
