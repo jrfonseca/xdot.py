@@ -666,7 +666,8 @@ class DotWindow(Gtk.Window):
         dot_widget = self.dotwidget
         try:
             regexp = re.compile(entry_text)
-        except re.error:
+        except re.error as err:
+            sys.stderr.write('warning: re.compile() failed with error "%s"\n' % err)
             return []
         for element in dot_widget.graph.nodes + dot_widget.graph.edges:
             if element.search_text(regexp):
