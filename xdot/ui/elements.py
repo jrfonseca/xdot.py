@@ -651,10 +651,10 @@ class Graph(Shape):
     def get_size(self):
         return self.width, self.height
 
-    def _draw_shapes(self, cr, bounding):
+    def _draw_shapes(self, cr, bounding, highlight_items):
         for shape in self.shapes:
             if bounding is None or shape._intersects(bounding):
-                shape._draw(cr, highlight=False, bounding=bounding)
+                shape._draw(cr, highlight=(shape in highlight_items), bounding=bounding)
 
     def _draw_nodes(self, cr, bounding, highlight_items):
         highlight_nodes = []
@@ -690,7 +690,8 @@ class Graph(Shape):
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
         cr.set_line_join(cairo.LINE_JOIN_MITER)
 
-        self._draw_shapes(cr, bounding)
+        self._draw_shapes(cr, bounding, highlight_items)
+
         if self.outputorder == 'edgesfirst':
             self._draw_edges(cr, bounding, highlight_items)
             self._draw_nodes(cr, bounding, highlight_items)
