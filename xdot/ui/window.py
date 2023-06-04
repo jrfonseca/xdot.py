@@ -669,7 +669,7 @@ class DotWindow(Gtk.Window):
         except re.error as err:
             sys.stderr.write('warning: re.compile() failed with error "%s"\n' % err)
             return []
-        for element in dot_widget.graph.nodes + dot_widget.graph.edges:
+        for element in dot_widget.graph.nodes + dot_widget.graph.edges + dot_widget.graph.shapes:
             if element.search_text(regexp):
                 found_items.append(element)
         return sorted(found_items, key=operator.methodcaller('get_text'))
