@@ -1,0 +1,30 @@
+digraph G {
+    rankdir="LR";
+    node [style=filled,fillcolor=white];
+
+    START -> aaaa;
+    START -> dddd;
+
+    subgraph cluster_container {
+        style="rounded,filled";
+        fillcolor="#eeeeee";
+        label="Example";
+
+        subgraph cluster_first {
+            style="rounded,filled";
+            label="WP01: FOO";
+            fillcolor="#eeffee";
+            
+            aaaa -> bbbb -> cccc;
+        }
+
+        subgraph cluster_second {
+            style="rounded,filled";
+            label = "WP02: BAR";
+            fillcolor="#eeffff";
+
+            dddd -> eeee -> ffff;
+        }
+
+    }
+}
