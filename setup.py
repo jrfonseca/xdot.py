@@ -55,8 +55,7 @@ setup(
     ],
 
     install_requires=[
-        # This is true, but doesn't work realiably
-        #'PyGObject',
+        'PyGObject',
         'numpy'
     ],
 )
