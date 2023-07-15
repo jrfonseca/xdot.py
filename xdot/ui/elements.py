@@ -101,6 +101,7 @@ class Shape:
 class TextShape(Shape):
 
     LEFT, CENTER, RIGHT = -1, 0, 1
+    DEFAULT_FONTNAME = Gtk.Settings.get_default().get_property("gtk-font-name")
 
     def __init__(self, pen, x, y, j, w, t):
         Shape.__init__(self)
@@ -163,12 +164,15 @@ class TextShape(Shape):
             assert success
             layout.set_attributes(attrs)
 
-            font.set_family(self.pen.fontname)
-            if not self._font_available(self.pen.fontname, pango_context=context):
-                msg = "Font family {fontname!r} is not available".format(
+            if self._font_available(self.pen.fontname, pango_context=context):
+                font.set_family(self.pen.fontname)
+            else:
+                msg = "Font family {fontname!r} is not available, using {default!r}".format(
                     fontname=self.pen.fontname,
+                    default=self.DEFAULT_FONTNAME
                 )
                 warnings.warn(msg)
+                font.set_family(self.DEFAULT_FONTNAME)
 
             font.set_absolute_size(self.pen.fontsize*Pango.SCALE)
             layout.set_font_description(font)
