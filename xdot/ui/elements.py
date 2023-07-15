@@ -15,6 +15,7 @@
 #
 import math
 import operator
+import warnings
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -22,6 +23,7 @@ gi.require_version('PangoCairo', '1.0')
 
 from gi.repository import GObject
 from gi.repository import Gdk
+from gi.repository import Gtk
 from gi.repository import GdkPixbuf
 from gi.repository import Pango
 from gi.repository import PangoCairo
@@ -109,6 +111,10 @@ class TextShape(Shape):
         self.w = w  # width
         self.t = t  # text
 
+    def _font_available(self, fontname, pango_context):
+        available_fonts = [family.get_name() for family in pango_context.list_families()]
+        return fontname in available_fonts
+
     def _draw(self, cr, highlight, bounding):
 
         try:
@@ -158,6 +164,12 @@ class TextShape(Shape):
             layout.set_attributes(attrs)
 
             font.set_family(self.pen.fontname)
+            if not self._font_available(self.pen.fontname, pango_context=context):
+                msg = "Font family {fontname!r} is not available".format(
+                    fontname=self.pen.fontname,
+                )
+                warnings.warn(msg)
+
             font.set_absolute_size(self.pen.fontsize*Pango.SCALE)
             layout.set_font_description(font)
 
