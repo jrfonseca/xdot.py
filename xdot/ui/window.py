@@ -156,7 +156,7 @@ class DotWidget(Gtk.DrawingArea):
     def set_xdotcode(self, xdotcode, center=True):
         assert isinstance(xdotcode, bytes)
 
-        if self.graphviz_version is None:
+        if self.graphviz_version is None and self.filter is not None:
             stdout = subprocess.check_output([self.filter, '-V'], stderr=subprocess.STDOUT)
             stdout = stdout.rstrip()
             mo = re.match(br'^.* - .* version (?P<version>.*) \(.*\)$', stdout)
