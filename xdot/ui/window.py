@@ -82,6 +82,7 @@ class DotWidget(Gtk.DrawingArea):
 
         self.connect('key-press-event', self.on_key_press_event)
         self.last_mtime = None
+        self.mtime_changed = False
 
         GLib.timeout_add(1000, self.update)
 
@@ -150,6 +151,7 @@ class DotWidget(Gtk.DrawingArea):
                 self.last_mtime = None
             else:
                 self.last_mtime = os.stat(filename).st_mtime
+            self.mtime_changed = False
             self.openfilename = filename
             return True
 
@@ -186,6 +188,9 @@ class DotWidget(Gtk.DrawingArea):
                 return True
             if current_mtime != self.last_mtime:
                 self.last_mtime = current_mtime
+                self.mtime_changed = True
+            elif self.mtime_changed:
+                self.mtime_changed = False
                 self.reload()
         return True
 
