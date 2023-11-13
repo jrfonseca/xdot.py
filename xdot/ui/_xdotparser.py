@@ -18,7 +18,7 @@ import colorsys
 import re
 import sys
 
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from ..dot.lexer import DotLexer
 from ..dot.parser import DotParser
@@ -264,7 +264,7 @@ class XDotParser(DotParser):
         # https://github.com/jrfonseca/xdot.py/issues/92
         self.broken_backslashes = False
         if graphviz_version is not None and \
-                LooseVersion(graphviz_version) < LooseVersion("2.46.0"):
+                Version(graphviz_version) < Version("2.46.0"):
             self.broken_backslashes = True
 
         self.nodes = []

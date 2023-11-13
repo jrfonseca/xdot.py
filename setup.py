@@ -56,6 +56,7 @@ setup(
 
     install_requires=[
         'PyGObject',
-        'numpy'
+        'numpy',
+        'packaging',
     ],
 )
