@@ -114,6 +114,8 @@ You can also pass the following options:
       Escape                    halt animation
       Ctrl-drag                 zoom in/out
       Shift-drag                zooms an area
+      Click (on edge)           focus edge's source node
+      Ctrl-click (on edge)      focus edge's *destination* node
 
 If `-` is given as input file then _xdot.py_ will read the dot graph from the standard input.
 

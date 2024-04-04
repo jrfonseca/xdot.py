@@ -627,7 +627,7 @@ class Edge(Element):
             return True
         return False
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, to_dst = False):
         for shape in self.shapes:
             x1, y1, x2, y2 = shape.bounding
             if (x1 - self.RADIUS) <= x and x <= (x2 + self.RADIUS) and (y1 - self.RADIUS) <= y and y <= (y2 + self.RADIUS):
@@ -639,7 +639,8 @@ class Edge(Element):
         for shape in self.shapes:
             distance = shape.get_smallest_distance(x, y)
             if distance is not None and distance <= self.RADIUS:
-                return Jump(self, self.src.x, self.src.y)
+                jmp_dest = self.dst if to_dst else self.src
+                return Jump(self, jmp_dest.x, jmp_dest.y)
 
         return None
 
@@ -730,9 +731,9 @@ class Graph(Shape):
                 return url
         return None
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, to_dst = False):
         for edge in self.edges:
-            jump = edge.get_jump(x, y)
+            jump = edge.get_jump(x, y, to_dst)
             if jump is not None:
                 return jump
         for node in self.nodes:

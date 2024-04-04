@@ -40,6 +40,8 @@ Shortcuts:
   Escape                    halt animation
   Ctrl-drag                 zoom in/out
   Shift-drag                zooms an area
+  Click (on edge)           focus edge's source node
+  Ctrl-click (on edge)      focus edge's *destination* node
 '''
     )
     parser.add_argument(
