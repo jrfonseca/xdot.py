@@ -443,7 +443,8 @@ class DotWidget(Gtk.DrawingArea):
                 if url is not None:
                     self.emit('clicked', url.url, event)
                 else:
-                    jump = self.get_jump(x, y)
+                    ctrl_held = event.state & Gdk.ModifierType.CONTROL_MASK
+                    jump = self.get_jump(x, y, to_dst=ctrl_held)
                     if jump is not None:
                         self.animate_to(jump.x, jump.y)
 
@@ -528,9 +529,9 @@ class DotWidget(Gtk.DrawingArea):
         x, y = self.window2graph(x, y)
         return self.graph.get_url(x, y)
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, to_dst = False):
         x, y = self.window2graph(x, y)
-        return self.graph.get_jump(x, y)
+        return self.graph.get_jump(x, y, to_dst)
 
 
 class FindMenuToolAction(Gtk.Action):
