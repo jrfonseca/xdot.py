@@ -97,6 +97,9 @@ class DotWidget(Gtk.DrawingArea):
         self.history_back = []
         self.history_forward = []
 
+        self.zoom_gesture = Gtk.GestureZoom.new(self)
+        self.zoom_gesture.connect("scale-changed", self.on_scale_changed)
+
     def error_dialog(self, message):
         self.emit('error', message)
 
@@ -476,6 +479,13 @@ class DotWidget(Gtk.DrawingArea):
     def on_area_size_allocate(self, area, allocation):
         if self.zoom_to_fit_on_resize:
             self.zoom_to_fit()
+
+    def on_scale_changed(self, gesture, scale):
+        point, x, y = gesture.get_point()
+        if point:
+            pos = (x, y)
+        new_zoom_ratio = self.zoom_ratio * math.exp(math.log(scale) / 3)
+        self.zoom_image(new_zoom_ratio, pos=pos)
 
     def animate_to(self, x, y):
         del self.history_forward[:]
