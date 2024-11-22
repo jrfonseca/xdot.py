@@ -267,6 +267,8 @@ class XDotParser(DotParser):
                 Version(graphviz_version) < Version("2.46.0"):
             self.broken_backslashes = True
 
+        self.charset = 'utf-8'
+
         self.nodes = []
         self.edges = []
         self.shapes = []
@@ -288,9 +290,14 @@ class XDotParser(DotParser):
                     sys.stderr.write('warning: xdot version %s, but supported is %s\n' %
                                      (xdotversion, self.XDOTVERSION))
 
+            try:
+                self.charset = attrs['charset'].decode('ascii')
+            except KeyError:
+                pass
+
             # Parse output order
             try:
-                self.outputorder = attrs['outputorder'].decode('utf-8')
+                self.outputorder = attrs['outputorder'].decode(self.charset)
             except KeyError:
                 pass
 
@@ -319,6 +326,14 @@ class XDotParser(DotParser):
                 parser = XDotAttrParser(self, attrs[attr], self.broken_backslashes)
                 self.shapes.extend(parser.parse())
 
+    def decode_attr(self, attrs, name):
+        try:
+            value = attrs[name]
+        except KeyError:
+            return None
+        else:
+            return value.decode(self.charset)
+
     def handle_node(self, id, attrs):
         try:
             pos = attrs['pos']
@@ -340,13 +355,9 @@ class XDotParser(DotParser):
             if attr in attrs:
                 parser = XDotAttrParser(self, attrs[attr], self.broken_backslashes)
                 shapes.extend(parser.parse())
-        try:
-            url = attrs['URL']
-        except KeyError:
-            url = None
-        else:
-            url = url.decode('utf-8')
-        node = elements.Node(id, x, y, w, h, shapes, url, attrs.get("tooltip"))
+        url = self.decode_attr(attrs, 'URL')
+        tooltip = self.decode_attr(attrs, 'tooltip')
+        node = elements.Node(id, x, y, w, h, shapes, url, tooltip)
         self.node_by_name[id] = node
         if shapes:
             self.nodes.append(node)
@@ -366,7 +377,8 @@ class XDotParser(DotParser):
         if shapes:
             src = self.node_by_name[src_id]
             dst = self.node_by_name[dst_id]
-            self.edges.append(elements.Edge(src, dst, points, shapes, attrs.get("tooltip")))
+            tooltip = self.decode_attr(attrs, 'tooltip')
+            self.edges.append(elements.Edge(src, dst, points, shapes, tooltip))
 
     def parse(self):
         DotParser.parse(self)
