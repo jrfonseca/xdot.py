@@ -84,12 +84,6 @@ class Parser:
 
 class DotParser(Parser):
 
-    def __init__(self, lexer):
-        Parser.__init__(self, lexer)
-        self.graph_attrs = {}
-        self.node_attrs = {}
-        self.edge_attrs = {}
-
     def parse(self):
         self.parse_graph()
         if self.lookahead.type != EOF:
@@ -131,14 +125,13 @@ class DotParser(Parser):
         if self.lookahead.type == GRAPH:
             self.consume()
             attrs = self.parse_attrs()
-            self.graph_attrs.update(attrs)
             self.handle_graph(attrs)
         elif self.lookahead.type == NODE:
             self.consume()
-            self.node_attrs.update(self.parse_attrs())
+            self.parse_attrs()
         elif self.lookahead.type == EDGE:
             self.consume()
-            self.edge_attrs.update(self.parse_attrs())
+            self.parse_attrs()
         elif self.lookahead.type in (SUBGRAPH, LCURLY):
             self.parse_subgraph()
         else:
