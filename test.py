@@ -39,8 +39,12 @@ def test(arg):
 
     class TestDotWidget(DotWidget):
 
-        def __init__(self, name):
+        def __init__(self, filename):
             DotWidget.__init__(self)
+
+            self.dirname, basename = os.path.split(filename)
+
+            name, ext = os.path.splitext(basename)
             self.name = name
 
         def on_draw(self, widget, cr):
@@ -82,7 +86,7 @@ def test(arg):
 
                 self.graph.draw(cr, highlight_items=self.highlight)
 
-                surface.write_to_png(self.name + '.png')
+                surface.write_to_png(os.path.join(self.dirname, self.name + '.png'))
 
             if False:
                 # GTK 3 screenshot
@@ -94,7 +98,7 @@ def test(arg):
 
                 pixbuf = Gdk.pixbuf_get_from_window(window, 0, 0, w, h)
 
-                pixbuf.savev(self.name + '.png', 'png', (), ())
+                pixbuf.savev(os.path.join(self.dirname, self.name + '.png'), 'png', (), ())
 
             Gtk.main_quit()
 
@@ -105,8 +109,7 @@ def test(arg):
 
     result = True
 
-    name, ext = os.path.splitext(os.path.basename(arg))
-    widget = TestDotWidget(name)
+    widget = TestDotWidget(arg)
     window = DotWindow(widget)
     window.connect('delete-event', Gtk.main_quit)
     try:
