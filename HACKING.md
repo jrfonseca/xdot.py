@@ -1,5 +1,8 @@
 # Testing
 
-    cd tests
-    ../test.py *.dot
-    ../test.py graphs/*.gv
+    ./test.py tests/*.dot
+    ./test.py tests/graphs/*.gv
+
+or simply
+
+    .github/scripts/test.sh
