@@ -1,4 +1,6 @@
 .*.sw?
+.coverage
+.coverage.*
 *.pyc
 *.egg-info
 build
