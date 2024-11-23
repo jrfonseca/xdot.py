@@ -1,0 +1,6 @@
+digraph{
+
+30[ fontname="ThisFontNameDoesNotExist" shape=box width=0 height=0
+	label="ABCDEFGHIJLKLMNOPQRSTUVWXYZ\nabcdefghijlklmnopqrstuvwxyz"];
+
+}

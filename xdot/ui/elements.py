@@ -98,6 +98,55 @@ class Shape:
         return None
 
 
+# Map PostScript fontnames to Pango description strings
+# See also:
+# - https://graphviz.org/docs/attrs/fontname/
+# - https://gitlab.com/graphviz/graphviz/-/blob/main/lib/common/ps_font_equiv.h
+# - https://docs.gtk.org/Pango/type_func.FontDescription.from_string.html
+# XXX: Ideally we'd call FontConfig to do this for us, but there seems to be no
+# easy way to do that
+fontname_map = {
+    # PostScript Level 1
+    'Courier':                       'Courier,monospace',
+    'Courier-Bold':                  'Courier,monospace Bold',
+    'Courier-Oblique':               'Courier,monospace Oblique',
+    'Courier-BoldOblique':           'Courier,monospace Bold Oblique',
+    'Helvetica':                     'Helvetica,sans',
+    'Helvetica-Bold':                'Helvetica,sans Bold',
+    'Helvetica-Oblique':             'Helvetica,sans Oblique',
+    'Helvetica-BoldOblique':         'Helvetica,sans Bold Oblique',
+    'Times-Roman':                   'Times,serif Roman',
+    'Times-Bold':                    'Times,serif Bold',
+    'Times-Italic':                  'Times,serif Italic',
+    'Times-BoldItalic':              'Times,serif Bold Italic',
+    'Symbol':                        'Symbol,fantasy',
+
+    # PostScript Level 2
+    'AvantGarde-Book':               'AvantGarde,sans Book',
+    'AvantGarde-BookOblique':        'AvantGarde,sans Book Oblique',
+    'AvantGarde-Demi':               'AvantGarde,sans Demi',
+    'AvantGarde-DemiOblique':        'AvantGarde,sans Demi Oblique',
+    'Bookman-Demi':                  'Bookman,serif Demi',
+    'Bookman-DemiItalic':            'Bookman,serif Demi Italic',
+    'Bookman-Light':                 'Bookman,serif Light',
+    'Bookman-LightItalic':           'Bookman,serif Light Italic',
+    'Helvetica-Narrow':              'Helvetica,sans Condensed',
+    'Helvetica-Narrow-Bold':         'Helvetica,sans Condensed Bold',
+    'Helvetica-Narrow-Oblique':      'Helvetica,sans Condensed Oblique',
+    'Helvetica-Narrow-BoldOblique':  'Helvetica,sans Condensed Bold Oblique',
+    'NewCenturySchlbk-Bold':         'NewCenturySchlbk,serif Bold',
+    'NewCenturySchlbk-BoldItalic':   'NewCenturySchlbk,serif Bold Italic',
+    'NewCenturySchlbk-Italic':       'NewCenturySchlbk,serif Italic',
+    'NewCenturySchlbk-Roman':        'NewCenturySchlbk,serif Roman',
+    'Palatino-Bold':                 'Palatino,serif Bold',
+    'Palatino-BoldItalic':           'Palatino,serif Bold Italic',
+    'Palatino-Italic':               'Palatino,serif Italic',
+    'Palatino-Roman':                'Palatino,serif Roman',
+    'ZapfChancery-MediumItalic':     'ZapfChancery Medium Italic',
+    'ZapfDingbats':                  'ZapfDingbats,fantasy',
+}
+
+
 class TextShape(Shape):
 
     LEFT, CENTER, RIGHT = -1, 0, 1
@@ -110,15 +159,6 @@ class TextShape(Shape):
         self.j = j  # Centering
         self.w = w  # width
         self.t = t  # text
-        default_settings = Gtk.Settings.get_default()
-        if default_settings:
-            self.default_fontname = default_settings.get_property("gtk-font-name")
-        else:
-            self.default_fontname = self.pen.fontname
-
-    def _font_available(self, fontname, pango_context):
-        available_fonts = [family.get_name() for family in pango_context.list_families()]
-        return fontname in available_fonts
 
     def _draw(self, cr, highlight, bounding):
 
@@ -146,9 +186,6 @@ class TextShape(Shape):
                 # https://git.gnome.org/browse/pygobject/commit/?id=b21f66d2a399b8c9a36a1758107b7bdff0ec8eaa
                 pass
 
-            # set font
-            font = Pango.FontDescription()
-
             # https://developer.gnome.org/pango/stable/PangoMarkupFormat.html
             markup = GObject.markup_escape_text(self.t)
             if self.pen.bold:
@@ -168,16 +205,9 @@ class TextShape(Shape):
             assert success
             layout.set_attributes(attrs)
 
-            if self._font_available(self.pen.fontname, pango_context=context):
-                font.set_family(self.pen.fontname)
-            else:
-                msg = "Font family {fontname!r} is not available, using {default!r}".format(
-                    fontname=self.pen.fontname,
-                    default=self.default_fontname
-                )
-                warnings.warn(msg)
-                font.set_family(self.default_fontname)
-
+            # set font
+            fontname = fontname_map.get(self.pen.fontname, self.pen.fontname)
+            font = Pango.FontDescription(fontname)
             font.set_absolute_size(self.pen.fontsize*Pango.SCALE)
             layout.set_font_description(font)
 
