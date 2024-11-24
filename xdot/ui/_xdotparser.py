@@ -17,6 +17,7 @@
 import colorsys
 import re
 import sys
+from typing import Union
 
 from packaging.version import Version
 
@@ -334,6 +335,32 @@ class XDotParser(DotParser):
         else:
             return value.decode(self.charset)
 
+    @staticmethod
+    def interpret_esc_nl(esc_string: Union[str, None]):
+        r"""Interpret newline escape sequences.
+
+        \n, \l and \r are replaced with newlines, other escaped
+        characters such as \\ with themselves.
+        """
+        if esc_string is None:
+            return None
+        result = ""
+        was_escape = False
+        for ch in esc_string:
+            if was_escape:
+                was_escape = False
+                if ch in ['n', 'l', 'r']:
+                    result += "\n"
+                else:
+                    result += ch
+            else:
+                if ch == "\\":
+                    was_escape = True
+                else:
+                    result += ch
+        return result
+
+
     def handle_node(self, id, attrs):
         try:
             pos = attrs['pos']
@@ -356,7 +383,7 @@ class XDotParser(DotParser):
                 parser = XDotAttrParser(self, attrs[attr], self.broken_backslashes)
                 shapes.extend(parser.parse())
         url = self.decode_attr(attrs, 'URL')
-        tooltip = self.decode_attr(attrs, 'tooltip')
+        tooltip = self.interpret_esc_nl(self.decode_attr(attrs, 'tooltip'))
         node = elements.Node(id, x, y, w, h, shapes, url, tooltip)
         self.node_by_name[id] = node
         if shapes:
@@ -377,7 +404,7 @@ class XDotParser(DotParser):
         if shapes:
             src = self.node_by_name[src_id]
             dst = self.node_by_name[dst_id]
-            tooltip = self.decode_attr(attrs, 'tooltip')
+            tooltip = self.interpret_esc_nl(self.decode_attr(attrs, 'tooltip'))
             self.edges.append(elements.Edge(src, dst, points, shapes, tooltip))
 
     def parse(self):
