@@ -17,6 +17,7 @@
 import colorsys
 import re
 import sys
+from typing import Union
 
 from packaging.version import Version
 
@@ -335,7 +336,7 @@ class XDotParser(DotParser):
             return value.decode(self.charset)
 
     @staticmethod
-    def interpret_esc_nl(esc_string: str | None):
+    def interpret_esc_nl(esc_string: Union[str, None]):
         r"""Interpret newline escape sequences.
 
         \n, \l and \r are replaced with newlines, other escaped
