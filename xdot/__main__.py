@@ -18,6 +18,7 @@
 
 import argparse
 import sys
+from threading import Thread
 
 from .ui.window import DotWindow, Gtk
 
@@ -63,6 +64,10 @@ Shortcuts:
         '--hide-toolbar',
         action='store_true', dest='hide_toolbar',
         help='Hides the toolbar on start.')
+    parser.add_argument(
+        '--streaming-mode',
+        action='store_true', dest='streaming_mode',
+        help='Updates canvas when a new graph is read from stdin')
 
     options = parser.parse_args()
     inputfile = options.inputfile
@@ -91,7 +96,32 @@ Shortcuts:
         import signal
         signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+    def read():
+        istream = sys.stdin.detach()
+        buf = bytearray()
+        first = True
+        # if there's a more efficient way to do this than to scan
+        # stdin character by character, I'm all for it. This just gets
+        # us off the ground.
+        #
+        # what we're doing is looking for the null byte which 
+        while True:
+            byte = istream.read(1)
+            if not byte:
+                pass # Gtk.main_quit()
+            elif byte == b'\0':
+                win.set_dotcode(bytes(buf), preserve_viewport=not first)
+                buf = bytearray()
+                first = False
+            else:
+                buf += byte
+
+    if options.streaming_mode:
+        reader = Thread(target=read, daemon=True)
+        reader.start()
+
     Gtk.main()
+
 
 if __name__ == '__main__':
     main()
