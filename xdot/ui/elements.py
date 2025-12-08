@@ -639,12 +639,13 @@ def square_distance(x1, y1, x2, y2):
 
 class Edge(Element):
 
-    def __init__(self, src, dst, points, shapes, tooltip):
+    def __init__(self, src, dst, points, shapes, tooltip, url):
         Element.__init__(self, shapes)
         self.src = src
         self.dst = dst
         self.points = points
         self.tooltip = tooltip
+        self.url = url
 
     RADIUS = 10
 
@@ -676,6 +677,15 @@ class Edge(Element):
                 jmp_dest = self.dst if to_dst else self.src
                 return Jump(self, jmp_dest.x, jmp_dest.y)
 
+        return None
+
+    def get_url(self, x, y):
+        if self.is_inside_begin(x, y) and self.url['head'] is not None:
+            return Url(self, self.url['head'])
+        if self.is_inside_end(x, y) and self.url['tail'] is not None:
+            return Url(self, self.url['tail'])
+        if self.is_inside(x, y) and self.url['body'] is not None:
+            return Url(self, self.url['body'])
         return None
 
     def __repr__(self):
@@ -757,10 +767,15 @@ class Graph(Shape):
         for edge in self.edges:
             if edge.is_inside(x, y):
                 return edge
+        return None
 
     def get_url(self, x, y):
         for node in self.nodes:
             url = node.get_url(x, y)
+            if url is not None:
+                return url
+        for edge in self.edges:
+            url = edge.get_url(x, y)
             if url is not None:
                 return url
         return None

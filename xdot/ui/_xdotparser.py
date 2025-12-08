@@ -360,7 +360,6 @@ class XDotParser(DotParser):
                     result += ch
         return result
 
-
     def handle_node(self, id, attrs):
         try:
             pos = attrs['pos']
@@ -405,7 +404,18 @@ class XDotParser(DotParser):
             src = self.node_by_name[src_id]
             dst = self.node_by_name[dst_id]
             tooltip = self.interpret_esc_nl(self.decode_attr(attrs, 'tooltip'))
-            self.edges.append(elements.Edge(src, dst, points, shapes, tooltip))
+
+            edge_url = (self.decode_attr(attrs, 'edgeURL') or self.decode_attr(attrs, 'edgehref') or
+                        self.decode_attr(attrs, 'URL') or self.decode_attr(attrs, 'href'))
+            head_url = self.decode_attr(attrs, 'headURL') or self.decode_attr(attrs, 'headhref')
+            tail_url = self.decode_attr(attrs, 'tailURL') or self.decode_attr(attrs, 'tailhref')
+            url = {
+                'body': edge_url,
+                'head': head_url or edge_url,
+                'tail': tail_url or edge_url
+            }
+
+            self.edges.append(elements.Edge(src, dst, points, shapes, tooltip, url))
 
     def parse(self):
         DotParser.parse(self)
