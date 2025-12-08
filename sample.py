@@ -45,7 +45,7 @@ dotcode = b"""
 digraph G {
   Hello [URL="http://en.wikipedia.org/wiki/Hello"]
   World [URL="http://en.wikipedia.org/wiki/World"]
-    Hello -> World [URL="http://en.wikipedia.org/wiki/Edge"]
+    Hello -> World [URL="http://en.wikipedia.org/wiki/Edge", headhref="http://en.wikipedia.org/wiki/EdgeHead", tailURL="http://en.wikipedia.org/wiki/EdgeTail"]
 }
 """
 

@@ -660,6 +660,12 @@ class Edge(Element):
             return True
         if self.is_inside_end(x, y):
             return True
+
+        for shape in self.shapes:
+            min_dist = shape.get_smallest_distance(x, y)
+            if min_dist is not None and min_dist <= self.RADIUS:
+                return True
+
         return False
 
     def get_jump(self, x, y, to_dst = False):
