@@ -432,6 +432,22 @@ class DotWidget(Gtk.DrawingArea):
         (click on empty space)."""
         return False
 
+    def on_hover(self, element, action, tooltip):
+        """Override this method in a subclass to process
+        hover events. Note that hover events are triggered
+        for every move on an element, i.e. multiple hover
+        events will trigger for a single element
+
+        :param xdot.ui.elements.Element element: the element that is being hovered
+        :param xdot.ui.action.DragAction action: the action that triggered the hover (always a NullAction)
+        :param (Gtk.Window tooltip_window, Gtk.Label): gtk popup window associated with the action (the window is global as
+                                            there may be only one tooltip at once) and the label (contents) of the window
+
+        :return: `True` stops the rendering of the tooltip, `False` proceeds with the default flow
+        :rtype: bool
+        """
+        return False
+
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
         self.drag_action = actions.NullAction(self)
