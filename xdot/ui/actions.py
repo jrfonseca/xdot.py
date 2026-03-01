@@ -70,7 +70,10 @@ class TooltipContext():
     _tooltip_window.add(_tooltip_box)
     _tooltip_window.hide()
 
-    _widgets = { }
+    _widgets = { "tooltip_label": Gtk.Label() }
+    _tooltip_box.add(_widgets["tooltip_label"])
+
+    tooltip_text = None
 
     def reset():
         """Reset the tooltip to it's native state"""
@@ -83,7 +86,8 @@ class TooltipContext():
         # Gtk (and python bindings) don't have an explicit Gtk.Widget.hide_all()
         _hide_widget(TooltipContext._tooltip_window)
 
-        TooltipContext._text = None
+    def set_parent(parent):
+        TooltipContext._parent = parent
 
     def add_widget(name, widget):
         TooltipContext._widgets[name] = widget
@@ -96,12 +100,12 @@ class TooltipContext():
     def get_widget(name):
         return TooltipContext._widgets[name]
 
-    def activate(dot_widget):
+    def activate():
         TooltipContext._tooltip_window.resize(
             TooltipContext._tooltip_box.get_preferred_width().natural_width or 1,
             TooltipContext._tooltip_box.get_preferred_height().natural_height or 1
         )
-        TooltipContext._tooltip_window.set_transient_for(dot_widget.get_toplevel())
+        TooltipContext._tooltip_window.set_transient_for(TooltipContext._parent.get_toplevel())
         TooltipContext._tooltip_box.show()
         TooltipContext._tooltip_window.show()
 
@@ -109,10 +113,6 @@ class TooltipContext():
         TooltipContext._tooltip_window.move(pointer.x + 15, pointer.y + 10)
 
 class NullAction(DragAction):
-    _tooltip_text = None
-    _tooltip_label = Gtk.Label(None)
-    TooltipContext.add_widget("tooltip_label", _tooltip_label)
-
     def on_motion_notify(self, event):
         if event.is_hint:
             window, x, y, state = event.window.get_device_position(event.device)
@@ -122,32 +122,16 @@ class NullAction(DragAction):
 
         item = dot_widget.get_url(x, y) or dot_widget.get_jump(x, y)
 
-        # Highlight the node
+        TooltipContext.reset()
+        TooltipContext.set_parent(dot_widget)
         if item is not None:
             dot_widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND2))
             dot_widget.set_highlight(item.highlight)
+
+            dot_widget.on_hover(dot_widget.get_element(x, y), event, TooltipContext)
         else:
             dot_widget.get_window().set_cursor(None)
             dot_widget.set_highlight(None)
-
-        # First try user defined hover effect
-        if dot_widget.on_hover(dot_widget.get_element(x, y), event):
-            TooltipContext.activate(dot_widget)
-            return
-
-        # Try to display tooltip
-        if item is not None:
-            if item.item.tooltip is not None:
-                if item.item.tooltip is not NullAction._tooltip_text:
-                    NullAction._tooltip_text = item.item.tooltip
-                    NullAction._tooltip_label.set_markup(NullAction._tooltip_text)
-                NullAction._tooltip_label.show()
-                TooltipContext.activate(dot_widget)
-            else:
-                TooltipContext.reset()
-        else:
-            TooltipContext.reset()
-
 
 
 class PanAction(DragAction):

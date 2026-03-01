@@ -440,13 +440,17 @@ class DotWidget(Gtk.DrawingArea):
 
         :param xdot.ui.elements.Element element: the element that is being hovered
         :param xdot.ui.action.DragAction action: the action that triggered the hover (always a NullAction)
-        :param (Gtk.Window tooltip_window, Gtk.Label): gtk popup window associated with the action (the window is global as
-                                            there may be only one tooltip at once) and the label (contents) of the window
-
-        :return: `True` stops the rendering of the tooltip, `False` proceeds with the default flow
-        :rtype: bool
+        :param TooltipContext: The global tooltip context
         """
-        return False
+        label = tooltip.get_widget("tooltip_label")
+
+        if element.tooltip is not None:
+            if element.tooltip is not tooltip.tooltip_text:
+                tooltip.tooltip_text = element.tooltip
+                label.set_markup(tooltip.tooltip_text)
+
+            label.show()
+            tooltip.activate()
 
     def on_area_button_release(self, area, event):
         self.drag_action.on_button_release(event)
