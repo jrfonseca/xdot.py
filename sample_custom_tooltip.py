@@ -45,7 +45,7 @@ class MyDotWidget(xdot.ui.DotWidget):
             # We ideally want to load the image only once
             if self.prev_element != element:
                 self.prev_element = element
-                image.set_from_file("./image.jpeg")
+                image.set_from_file("./image.jpg")
 
             # Set the image visible and activate the tooltip
             # (that moves the window to the cursor location and resizes it to fit the content)
