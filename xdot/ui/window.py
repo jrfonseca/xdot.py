@@ -351,7 +351,7 @@ class DotWidget(Gtk.DrawingArea):
             win.set_focus(textentry[0])
             return True
         if event.keyval == Gdk.KEY_q:
-            Gtk.main_quit()
+            self.get_toplevel().close()
             return True
         if event.keyval == Gdk.KEY_p:
             self.on_print()
