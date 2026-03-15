@@ -724,15 +724,17 @@ class DotWindow(Gtk.Window):
     def set_filter(self, filter):
         self.dotwidget.set_filter(filter)
 
-    def set_dotcode(self, dotcode, filename=None):
-        if self.dotwidget.set_dotcode(dotcode, filename):
+    def set_dotcode(self, dotcode, filename=None, preserve_viewport=False):
+        if self.dotwidget.set_dotcode(dotcode, filename, center=not preserve_viewport):
             self.update_title(filename)
-            self.dotwidget.zoom_to_fit()
+            if not preserve_viewport:
+                self.dotwidget.zoom_to_fit()
 
-    def set_xdotcode(self, xdotcode, filename=None):
-        if self.dotwidget.set_xdotcode(xdotcode):
+    def set_xdotcode(self, xdotcode, filename=None, preserve_viewport=False):
+        if self.dotwidget.set_xdotcode(xdotcode, center=not preserve_viewport):
             self.update_title(filename)
-            self.dotwidget.zoom_to_fit()
+            if not preserve_viewport:
+                self.dotwidget.zoom_to_fit()
 
     def update_title(self, filename=None):
         if filename is None:
