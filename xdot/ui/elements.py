@@ -585,13 +585,13 @@ class Element(CompoundShape):
     def __init__(self, shapes):
         CompoundShape.__init__(self, shapes)
 
-    def is_inside(self, x, y):
+    def is_inside(self, x, y, radius):
         return False
 
-    def get_url(self, x, y):
+    def get_url(self, x, y, radius):
         return None
 
-    def get_jump(self, x, y):
+    def get_jump(self, x, y, radius):
         return None
 
 
@@ -612,18 +612,18 @@ class Node(Element):
         self.url = url
         self.tooltip = tooltip
 
-    def is_inside(self, x, y):
+    def is_inside(self, x, y, radius):
         return self.x1 <= x and x <= self.x2 and self.y1 <= y and y <= self.y2
 
-    def get_url(self, x, y):
+    def get_url(self, x, y, radius):
         if self.url is None:
             return None
-        if self.is_inside(x, y):
+        if self.is_inside(x, y, radius):
             return Url(self, self.url)
         return None
 
-    def get_jump(self, x, y):
-        if self.is_inside(x, y):
+    def get_jump(self, x, y, radius):
+        if self.is_inside(x, y, radius):
             return Jump(self, self.x, self.y)
         return None
 
@@ -647,31 +647,29 @@ class Edge(Element):
         self.tooltip = tooltip
         self.url = url
 
-    RADIUS = 10
+    def is_inside_begin(self, x, y, radius):
+        return square_distance(x, y, *self.points[0]) <= radius*radius
 
-    def is_inside_begin(self, x, y):
-        return square_distance(x, y, *self.points[0]) <= self.RADIUS*self.RADIUS
+    def is_inside_end(self, x, y, radius):
+        return square_distance(x, y, *self.points[-1]) <= radius*radius
 
-    def is_inside_end(self, x, y):
-        return square_distance(x, y, *self.points[-1]) <= self.RADIUS*self.RADIUS
-
-    def is_inside(self, x, y):
-        if self.is_inside_begin(x, y):
+    def is_inside(self, x, y, radius):
+        if self.is_inside_begin(x, y, radius):
             return True
-        if self.is_inside_end(x, y):
+        if self.is_inside_end(x, y, radius):
             return True
 
         for shape in self.shapes:
             min_dist = shape.get_smallest_distance(x, y)
-            if min_dist is not None and min_dist <= self.RADIUS:
+            if min_dist is not None and min_dist <= radius:
                 return True
 
         return False
 
-    def get_jump(self, x, y, to_dst = False):
+    def get_jump(self, x, y, radius, to_dst = False):
         for shape in self.shapes:
             x1, y1, x2, y2 = shape.bounding
-            if (x1 - self.RADIUS) <= x and x <= (x2 + self.RADIUS) and (y1 - self.RADIUS) <= y and y <= (y2 + self.RADIUS):
+            if (x1 - radius) <= x and x <= (x2 + radius) and (y1 - radius) <= y and y <= (y2 + radius):
                 break
 
         else:
@@ -679,18 +677,18 @@ class Edge(Element):
 
         for shape in self.shapes:
             distance = shape.get_smallest_distance(x, y)
-            if distance is not None and distance <= self.RADIUS:
+            if distance is not None and distance <= radius:
                 jmp_dest = self.dst if to_dst else self.src
                 return Jump(self, jmp_dest.x, jmp_dest.y)
 
         return None
 
-    def get_url(self, x, y):
-        if self.is_inside_begin(x, y) and self.url['head'] is not None:
+    def get_url(self, x, y, radius):
+        if self.is_inside_begin(x, y, radius) and self.url['head'] is not None:
             return Url(self, self.url['head'])
-        if self.is_inside_end(x, y) and self.url['tail'] is not None:
+        if self.is_inside_end(x, y, radius) and self.url['tail'] is not None:
             return Url(self, self.url['tail'])
-        if self.is_inside(x, y) and self.url['body'] is not None:
+        if self.is_inside(x, y, radius) and self.url['body'] is not None:
             return Url(self, self.url['body'])
         return None
 
@@ -766,33 +764,33 @@ class Graph(Shape):
             self._draw_nodes(cr, bounding, highlight_items)
             self._draw_edges(cr, bounding, highlight_items)
 
-    def get_element(self, x, y):
+    def get_element(self, x, y, radius):
         for node in self.nodes:
-            if node.is_inside(x, y):
+            if node.is_inside(x, y, radius):
                 return node
         for edge in self.edges:
-            if edge.is_inside(x, y):
+            if edge.is_inside(x, y, radius):
                 return edge
         return None
 
-    def get_url(self, x, y):
+    def get_url(self, x, y, radius):
         for node in self.nodes:
-            url = node.get_url(x, y)
+            url = node.get_url(x, y, radius)
             if url is not None:
                 return url
         for edge in self.edges:
-            url = edge.get_url(x, y)
+            url = edge.get_url(x, y, radius)
             if url is not None:
                 return url
         return None
 
-    def get_jump(self, x, y, to_dst = False):
+    def get_jump(self, x, y, radius, to_dst = False):
         for edge in self.edges:
-            jump = edge.get_jump(x, y, to_dst)
+            jump = edge.get_jump(x, y, radius, to_dst)
             if jump is not None:
                 return jump
         for node in self.nodes:
-            jump = node.get_jump(x, y)
+            jump = node.get_jump(x, y, radius)
             if jump is not None:
                 return jump
         return None
