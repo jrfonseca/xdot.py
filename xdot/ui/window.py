@@ -551,17 +551,21 @@ class DotWidget(Gtk.DrawingArea):
         y += self.y
         return x, y
 
+    @property
+    def hit_radius(self):
+        return 10.0 / self.zoom_ratio
+
     def get_element(self, x, y):
         x, y = self.window2graph(x, y)
-        return self.graph.get_element(x, y)
+        return self.graph.get_element(x, y, self.hit_radius)
 
     def get_url(self, x, y):
         x, y = self.window2graph(x, y)
-        return self.graph.get_url(x, y)
+        return self.graph.get_url(x, y, self.hit_radius)
 
     def get_jump(self, x, y, to_dst = False):
         x, y = self.window2graph(x, y)
-        return self.graph.get_jump(x, y, to_dst)
+        return self.graph.get_jump(x, y, self.hit_radius, to_dst)
 
 
 class FindMenuToolAction(Gtk.Action):
