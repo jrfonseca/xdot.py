@@ -24,9 +24,7 @@ from gi.repository import Gtk
 
 import xdot.ui
 
-
 class MyDotWindow(xdot.ui.DotWindow):
-
     def __init__(self):
         xdot.ui.DotWindow.__init__(self)
         self.dotwidget.connect('clicked', self.on_url_clicked)
@@ -40,10 +38,9 @@ class MyDotWindow(xdot.ui.DotWindow):
         dialog.run()
         return True
 
-
 dotcode = b"""
 digraph G {
-  Hello [URL="http://en.wikipedia.org/wiki/Hello"]
+  Hello [URL="http://en.wikipedia.org/wiki/Hello", tooltip="This node contains Hello"]
   World [URL="http://en.wikipedia.org/wiki/World"]
     Hello -> World [URL="http://en.wikipedia.org/wiki/Edge", headhref="http://en.wikipedia.org/wiki/EdgeHead", tailURL="http://en.wikipedia.org/wiki/EdgeTail"]
 }
@@ -59,3 +56,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
