@@ -447,7 +447,7 @@ class DotWidget(Gtk.DrawingArea):
         if element.tooltip is not None:
             if element.tooltip is not tooltip.tooltip_text:
                 tooltip.tooltip_text = element.tooltip
-                label.set_markup(tooltip.tooltip_text)
+                label.set_text(tooltip.tooltip_text)
 
             label.show()
             tooltip.activate()
