@@ -346,9 +346,7 @@ class DotWidget(Gtk.DrawingArea):
             return True
         if event.keyval == Gdk.KEY_f:
             win = widget.get_toplevel()
-            find_toolitem = win.uimanager.get_widget('/ToolBar/Find')
-            textentry = find_toolitem.get_children()
-            win.set_focus(textentry[0])
+            win.set_focus(win.textentry)
             return True
         if event.keyval == Gdk.KEY_q:
             self.get_toplevel().close()
