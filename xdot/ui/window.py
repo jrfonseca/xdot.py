@@ -571,8 +571,17 @@ class DotWidget(Gtk.DrawingArea):
 class FindMenuToolAction(Gtk.Action):
     __gtype_name__ = "FindMenuToolAction"
 
+    def __init__(self, *args, **kwargs):
+        Gtk.Action.__init__(self, *args, **kwargs)
+        self._tool_items = []
+
     def do_create_tool_item(self):
-        return Gtk.ToolItem()
+        # Hold a Python reference to each proxy so PyGObject doesn't warn
+        # about returning an unowned widget; drop it once GTK destroys it.
+        item = Gtk.ToolItem()
+        self._tool_items.append(item)
+        item.connect('destroy', self._tool_items.remove)
+        return item
 
 
 class DotWindow(Gtk.Window):
