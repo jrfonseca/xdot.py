@@ -7,7 +7,7 @@ jobs:
   ubuntu-26_04:
     runs-on: ubuntu-26.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 1
     - name: apt-update
@@ -22,7 +22,7 @@ jobs:
   ubuntu-24_04:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 1
     - name: apt-update
@@ -37,7 +37,7 @@ jobs:
   ubuntu-22_04:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 1
     - name: apt-update
