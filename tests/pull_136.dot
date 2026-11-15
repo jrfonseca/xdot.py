@@ -1,0 +1,5 @@
+digraph {
+  C [tooltip="A\\nB"]
+  HTML [tooltip="A<br>B"]
+  C -> HTML
+}

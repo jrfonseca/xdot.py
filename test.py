@@ -23,6 +23,40 @@ import traceback
 import multiprocessing
 
 
+# GLib/GTK warnings and criticals logged during the current test.
+log_errors = []
+
+
+def init_worker():
+    """Treat GLib/GTK warnings and criticals as test failures.
+
+    GTK uses structured logging, so GLib.log_set_handler doesn't see its
+    messages, but a log writer function does.  The writer can only be set
+    once per process, hence it's done here and not in test()."""
+
+    from gi.repository import GLib
+
+    fatal_levels = GLib.LogLevelFlags.LEVEL_ERROR | \
+                   GLib.LogLevelFlags.LEVEL_CRITICAL | \
+                   GLib.LogLevelFlags.LEVEL_WARNING
+
+    # Warnings caused by the environment rather than by xdot.  Namely, the
+    # Ubuntu 22.04 GitHub runners lack some of the stock icons used in the
+    # toolbar.
+    ignored_messages = [
+        'Error loading theme icon ',
+    ]
+
+    def log_writer(log_level, fields, n_fields, user_data):
+        if log_level & fatal_levels:
+            message = GLib.log_writer_format_fields(log_level, fields, False)
+            if not any(ignored in message for ignored in ignored_messages):
+                log_errors.append(log_level)
+        return GLib.log_writer_default(log_level, fields, user_data)
+
+    GLib.log_set_writer_func(log_writer, None)
+
+
 def test(arg):
     sys.stdout.write(arg + '\n')
     sys.stdout.flush()
@@ -35,6 +69,9 @@ def test(arg):
     from gi.repository import Gdk
 
     from xdot.ui import DotWidget, DotWindow
+    from xdot.ui.actions import TooltipContext
+
+    del log_errors[:]
 
 
     class TestDotWidget(DotWidget):
@@ -88,6 +125,14 @@ def test(arg):
 
                 surface.write_to_png(os.path.join(self.dirname, self.name + '.png'))
 
+            # Exercise the tooltip code path for every element with a tooltip
+            TooltipContext.set_parent(self)
+            for element in self.graph.nodes + self.graph.edges:
+                if element.tooltip is not None:
+                    TooltipContext.reset()
+                    self.on_hover(element, None, TooltipContext)
+            TooltipContext.reset()
+
             if False:
                 # GTK 3 screenshot
 
@@ -126,13 +171,17 @@ def test(arg):
     finally:
         window.destroy()
 
+    if log_errors:
+        sys.stderr.write('%s: %u GLib warning(s)/error(s)\n' % (arg, len(log_errors)))
+        result = False
+
     return result
 
 
 def main():
     args = sys.argv[1:]
 
-    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+    pool = multiprocessing.Pool(multiprocessing.cpu_count(), init_worker)
     results = pool.map(test, args)
 
     # Exit with status 1 if any failed
