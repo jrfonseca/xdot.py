@@ -571,8 +571,14 @@ class DotWidget(Gtk.DrawingArea):
 class FindMenuToolAction(Gtk.Action):
     __gtype_name__ = "FindMenuToolAction"
 
+    def __init__(self, *args, **kwargs):
+        Gtk.Action.__init__(self, *args, **kwargs)
+        self._tool_item = None
+
     def do_create_tool_item(self):
-        return Gtk.ToolItem()
+        if self._tool_item is None:
+            self._tool_item = Gtk.ToolItem()
+        return self._tool_item
 
 
 class DotWindow(Gtk.Window):
