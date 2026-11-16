@@ -64,19 +64,28 @@ class DragAction(object):
         pass
 
 class TooltipContext():
-    _tooltip_window = Gtk.Window.new(type=Gtk.WindowType.POPUP)
-    _tooltip_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-
-    _tooltip_window.add(_tooltip_box)
-    _tooltip_window.hide()
-
-    _widgets = { "tooltip_label": Gtk.Label() }
-    _tooltip_box.add(_widgets["tooltip_label"])
+    _tooltip_window: Gtk.Window = None
+    _tooltip_box: Gtk.Box = None
+    _widgets: dict[str, Gtk.Widget] = {}
 
     tooltip_text = None
 
+    @staticmethod
+    def initialize():
+        if TooltipContext._tooltip_window is not None:
+            return
+        TooltipContext._tooltip_window = Gtk.Window.new(type=Gtk.WindowType.POPUP)
+        TooltipContext._tooltip_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+        TooltipContext._tooltip_window.add(TooltipContext._tooltip_box)
+        TooltipContext._tooltip_window.hide()
+
+        TooltipContext._widgets["tooltip_label"] = Gtk.Label()
+        TooltipContext._tooltip_box.add(TooltipContext._widgets["tooltip_label"])
+
+    @staticmethod
     def reset():
         """Reset the tooltip to it's native state"""
+        TooltipContext.initialize()
         def _hide_widget(w):
             w.hide()
             if isinstance(w, Iterable):
@@ -86,21 +95,31 @@ class TooltipContext():
         # Gtk (and python bindings) don't have an explicit Gtk.Widget.hide_all()
         _hide_widget(TooltipContext._tooltip_window)
 
+    @staticmethod
     def set_parent(parent):
+        TooltipContext.initialize()
         TooltipContext._parent = parent
 
+    @staticmethod
     def add_widget(name, widget):
+        TooltipContext.initialize()
         TooltipContext._widgets[name] = widget
         TooltipContext._tooltip_box.add(TooltipContext._widgets[name])
 
+    @staticmethod
     def remove_widget(name):
+        TooltipContext.initialize()
         widget = TooltipContext._widgets[name]
         TooltipContext._tooltip_box.remove(widget)
 
+    @staticmethod
     def get_widget(name):
+        TooltipContext.initialize()
         return TooltipContext._widgets[name]
 
+    @staticmethod
     def activate():
+        TooltipContext.initialize()
         TooltipContext._tooltip_window.resize(
             TooltipContext._tooltip_box.get_preferred_width().natural_width or 1,
             TooltipContext._tooltip_box.get_preferred_height().natural_height or 1
