@@ -582,15 +582,26 @@ class TestKeyboard(UITestCase):
 
 class TestFindKey(UITestCase):
 
-    # The find entry is only shown when the toolbar is wide enough.  In
-    # narrower windows it is in the toolbar overflow menu, unrealized, and
-    # sending key events to it after focusing it logs a GTK critical.
-    window_size = (1000, 480)
+    # DotWindow's default width, narrower than the whole toolbar.  The find
+    # entry used to land in the toolbar overflow, where it has no menu item,
+    # so find was unreachable and the "f" key focused an unrealized entry,
+    # logging a GTK critical on the next key press.
+    window_size = (512, 480)
+
+    def test_find_entry_visible(self):
+        self.assertTrue(self.window.textentry.get_mapped())
 
     def test_find_key_focuses_entry(self):
-        self.assertTrue(self.window.textentry.get_mapped())
         key(self.window, Gdk.KEY_f)
         self.assertIs(self.window.get_focus(), self.window.textentry)
+        # Typing now goes to the entry
+        key(self.window, Gdk.KEY_a)
+        self.assertEqual(self.window.textentry.get_text(), 'a')
+
+
+class TestFindKeyNarrow(TestFindKey):
+
+    window_size = (300, 300)
 
 
 class TestToolbar(UITestCase):

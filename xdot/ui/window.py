@@ -580,6 +580,15 @@ class DotWindow(Gtk.Window):
     ui = '''
     <ui>
         <toolbar name="ToolBar">
+            <!-- Find comes first because the toolbar overflows from the end,
+                 and unlike the buttons the find entry has no overflow menu
+                 item. -->
+            <toolitem name="Find" action="Find"/>
+            <separator name="FindNextSeparator"/>
+            <toolitem action="FindNext"/>
+            <separator name="FindStatusSeparator"/>
+            <toolitem name="FindStatus" action="FindStatus"/>
+            <separator/>
             <toolitem action="Open"/>
             <toolitem action="Export"/>
             <toolitem action="Reload"/>
@@ -592,12 +601,6 @@ class DotWindow(Gtk.Window):
             <toolitem action="ZoomOut"/>
             <toolitem action="ZoomFit"/>
             <toolitem action="Zoom100"/>
-            <separator/>
-            <toolitem name="Find" action="Find"/>
-            <separator name="FindNextSeparator"/>
-            <toolitem action="FindNext"/>
-            <separator name="FindStatusSeparator"/>
-            <toolitem name="FindStatus" action="FindStatus"/>
         </toolbar>
     </ui>
     '''
