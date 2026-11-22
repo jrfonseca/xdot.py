@@ -811,7 +811,9 @@ class DotWindow(Gtk.Window):
         if not filename.endswith("." + format_):
             filename += '.' + format_
         cmd = [
-            self.dotwidget.filter, # program name, usually "dot"
+            # Program name, usually "dot".  Use dot when the input is
+            # already xdot (no filter).
+            self.dotwidget.filter or 'dot',
             '-T' + format_,
             '-o', filename,
             self.dotwidget.openfilename,
