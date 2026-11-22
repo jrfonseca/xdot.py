@@ -27,6 +27,10 @@ Run with:
 """
 
 
+import os
+import subprocess
+
+import cairo
 import pytest
 from pytest import approx
 
@@ -34,14 +38,14 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 
-from gi.repository import Gdk
+from gi.repository import Gdk, Gtk
 
 from xdot.ui import DotWidget
 from xdot.ui import actions, animation
 from xdot.ui.actions import TooltipContext
 
 from tests.gtkutil import pump, button, motion, click, drag, scroll, key, \
-    window_center, wait_animation
+    graph_to_window, window_center, wait_animation
 
 
 #
@@ -63,6 +67,12 @@ TOOLTIPS = b'''digraph {
     b;
     a -> b [tooltip="edge tip"];
 }'''
+
+EDGE_URLS = b'''digraph {
+    a -> b [URL="body", headURL="head", tailURL="tail"];
+}'''
+
+THREE = b'digraph { a -> b -> c }'
 
 FIND = b'''digraph {
     apple -> banana;
@@ -553,3 +563,344 @@ def test_find_no_match(find_win):
     entry.activate()
     pump()
     assert win.dotwidget.history_back == []
+
+
+def test_find_invalid_regex(find_win, capsys):
+    # Happens routinely while typing, e.g. "a(" on the way to "a(b)"
+    win = find_win
+    win.textentry.set_text('a(')
+    pump()
+    assert win.dotwidget.highlight == []
+    win.textentry.activate()
+    pump()
+    assert win.dotwidget.history_back == []
+    assert 're.compile() failed' in capsys.readouterr().err
+
+
+def test_find_activate_empty_returns_focus(find_win):
+    win = find_win
+    entry = win.textentry
+    win.set_focus(entry)
+    entry.set_text('ap')
+    pump()
+    entry.set_text('')
+    entry.activate()
+    pump()
+    assert win.dotwidget.highlight is None
+    assert win.get_focus() is win.dotwidget
+
+
+#
+# Files
+#
+
+def rewrite(path, dotcode):
+    """Rewrite `path`, making sure the mtime changes even on file systems
+    with a coarse timestamp resolution."""
+    mtime_ns = path.stat().st_mtime_ns + 10**9
+    path.write_bytes(dotcode)
+    os.utime(path, ns=(mtime_ns, mtime_ns))
+
+
+@pytest.fixture
+def file_win(make_window, tmp_path):
+    path = tmp_path / 'g.dot'
+    path.write_bytes(SIMPLE)
+    win = make_window(b'digraph {}')
+    win.open_file(str(path))
+    pump()
+    win.path = path
+    return win
+
+
+def test_open_file(file_win):
+    win = file_win
+    w = win.dotwidget
+    assert win.get_title() == 'g.dot - Dot Viewer'
+    assert w.openfilename == str(win.path)
+    assert len(w.graph.nodes) == 2
+    assert w.zoom_to_fit_on_resize
+
+
+def test_open_missing_file(file_win, tmp_path):
+    win = file_win
+    win.open_file(str(tmp_path / 'missing.dot'))
+    assert len(win.errors) == 1
+    assert 'missing.dot' in win.errors[0]
+    # The previous graph stays
+    assert win.dotwidget.openfilename == str(win.path)
+    assert len(win.dotwidget.graph.nodes) == 2
+
+
+def _reload_key(win):
+    key(win, Gdk.KEY_r)
+
+
+def _reload_action(win):
+    win.actiongroup.get_action('Reload').activate()
+    pump()
+
+
+@pytest.mark.parametrize('trigger', [_reload_key, _reload_action],
+                         ids=['key', 'action'])
+def test_reload(file_win, trigger):
+    win = file_win
+    w = win.dotwidget
+    set_view(w, 5.0, 6.0, 2.0)
+    w.history_back.append((1.0, 2.0))
+    rewrite(win.path, THREE)
+    trigger(win)
+    assert len(w.graph.nodes) == 3
+    # The view isn't reset
+    assert (w.x, w.y, w.zoom_ratio) == (5.0, 6.0, 2.0)
+    assert w.history_back == []
+
+
+def test_auto_reload(file_win):
+    win = file_win
+    w = win.dotwidget
+    rewrite(win.path, THREE)
+    # The first poll that sees a new mtime waits, in case the file is still
+    # being written
+    w.update()
+    assert len(w.graph.nodes) == 2
+    w.update()
+    assert len(w.graph.nodes) == 3
+    # Nothing changed since
+    graph = w.graph
+    w.update()
+    assert w.graph is graph
+
+
+def test_reload_syntax_error(file_win):
+    win = file_win
+    w = win.dotwidget
+    rewrite(win.path, b'digraph { a -> }')
+    w.reload()
+    assert len(win.errors) == 1
+    assert 'syntax error' in win.errors[0]
+    assert len(w.graph.nodes) == 2
+
+
+def test_missing_filter(file_win):
+    win = file_win
+    w = win.dotwidget
+    win.set_filter('no-such-graphviz-filter')
+    w.reload()
+    assert win.errors == ['no-such-graphviz-filter: No such file or directory']
+    assert len(w.graph.nodes) == 2
+
+
+#
+# Export
+#
+
+def test_export_file(file_win, tmp_path):
+    win = file_win
+    win.export_file(str(tmp_path / 'out'), 'svg')
+    assert (tmp_path / 'out.svg').read_bytes().startswith(b'<?xml')
+    win.export_file(str(tmp_path / 'out2.svg'), 'svg')
+    assert (tmp_path / 'out2.svg').exists()
+    assert not (tmp_path / 'out2.svg.svg').exists()
+
+
+def test_export_dialog(file_win, tmp_path, monkeypatch):
+    seen = []
+
+    def run(chooser):
+        seen.append((chooser.get_current_name(), chooser.get_filter().get_name()))
+        return Gtk.ResponseType.OK
+
+    monkeypatch.setattr(Gtk.FileChooserDialog, 'run', run)
+    monkeypatch.setattr(Gtk.FileChooserDialog, 'get_filename',
+                        lambda chooser: str(tmp_path / 'exported'))
+    file_win.actiongroup.get_action('Export').activate()
+    pump()
+    assert seen == [('g', 'PNG image')]
+    assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
+
+
+def test_export_without_file(win, monkeypatch):
+    def run(chooser):
+        raise AssertionError('no dialog expected')
+    monkeypatch.setattr(Gtk.FileChooserDialog, 'run', run)
+    win.actiongroup.get_action('Export').activate()
+    pump()
+
+
+def test_export_without_filter(make_window, tmp_path):
+    # As with `xdot -n file.xdot`
+    path = tmp_path / 'g.xdot'
+    path.write_bytes(subprocess.check_output(['dot', '-Txdot'], input=SIMPLE))
+    win = make_window(b'digraph {}')
+    win.set_filter(None)
+    win.open_file(str(path))
+    pump()
+    assert len(win.dotwidget.graph.nodes) == 2
+    win.export_file(str(tmp_path / 'out'), 'svg')
+    assert (tmp_path / 'out.svg').exists()
+
+
+#
+# More view changes
+#
+
+def test_resize_refits(win):
+    w = win.dotwidget
+
+    def resize(width, height):
+        old = w.get_allocated_width()
+        win.resize(width, height)
+        pump(lambda: w.get_allocated_width() != old)
+        pump()
+
+    zoom = w.zoom_ratio
+    resize(320, 240)
+    assert w.zoom_ratio < zoom
+    assert w.zoom_to_fit_on_resize
+
+    # After zooming by hand, resizing leaves the zoom alone
+    key(win, Gdk.KEY_plus)
+    zoom = w.zoom_ratio
+    resize(640, 480)
+    assert w.zoom_ratio == zoom
+
+
+def test_zoom_area_click(win):
+    # A Shift click is a zoom area of zero size, which zooms in a step
+    w = win.dotwidget
+    set_view(w, -1000.0, -1000.0, 1.0)
+    click(w, *window_center(w), state=Gdk.ModifierType.SHIFT_MASK)
+    assert w.zoom_ratio == approx(DotWidget.ZOOM_INCREMENT)
+    assert (w.x, w.y) == approx((-1000.0, -1000.0))
+
+
+class FakeZoomGesture:
+
+    def __init__(self, point, x=0.0, y=0.0):
+        self.point = (point, x, y)
+
+    def get_point(self):
+        return self.point
+
+
+def test_pinch_zoom(win):
+    w = win.dotwidget
+    set_view(w, 40.0, 50.0, 1.0)
+    px, py = 150.0, 120.0
+    before = w.window2graph(px, py)
+    # Scale changes are damped to the cube root
+    w.on_scale_changed(FakeZoomGesture(True, px, py), 8.0)
+    assert w.zoom_ratio == approx(2.0)
+    assert w.window2graph(px, py) == approx(before)
+
+
+def test_pinch_zoom_without_point(win):
+    w = win.dotwidget
+    set_view(w, 40.0, 50.0, 1.0)
+    w.on_scale_changed(FakeZoomGesture(False), 8.0)
+    assert w.zoom_ratio == approx(2.0)
+    assert (w.x, w.y) == (40.0, 50.0)
+
+
+def test_right_click_does_nothing(win):
+    w = win.dotwidget
+    mx, my = edge_midpoint(w)
+    set_view(w, mx, my, 1.0)
+    click(w, *window_center(w), button_=3)
+    assert w.history_back == []
+    assert (w.x, w.y) == (mx, my)
+
+
+#
+# Edge URLs
+#
+
+def _edge_tail(e):
+    return e.points[0]
+
+
+def _edge_head(e):
+    return e.points[-1]
+
+
+def _edge_middle(e):
+    (x0, y0), (x1, y1) = e.points[0], e.points[-1]
+    return 0.5 * (x0 + x1), 0.5 * (y0 + y1)
+
+
+@pytest.mark.parametrize('where, url', [
+    (_edge_tail, 'tail'),
+    (_edge_head, 'head'),
+    (_edge_middle, 'body'),
+], ids=['tail', 'head', 'body'])
+def test_click_edge_url(make_window, where, url):
+    win = make_window(EDGE_URLS)
+    w = win.dotwidget
+    e = w.graph.edges[0]
+    # pos lists the points from tail (a) to head (b)
+    a, b = node(w, 'a'), node(w, 'b')
+    assert abs(e.points[0][1] - a.y) < abs(e.points[0][1] - b.y)
+    set_view(w, *edge_midpoint(w), 1.0)
+    clicked = []
+    w.connect('clicked', lambda widget, url, event: clicked.append(url))
+    click(w, *graph_to_window(w, *where(e)))
+    assert clicked == [url]
+    assert w.history_back == []
+
+
+#
+# Window API
+#
+
+def test_window_set_xdotcode(win):
+    w = win.dotwidget
+    set_view(w, 0.0, 0.0, 10.0)
+    xdotcode = subprocess.check_output(['dot', '-Txdot'], input=THREE)
+    win.set_xdotcode(xdotcode, 'three.xdot')
+    pump()
+    assert len(w.graph.nodes) == 3
+    assert win.get_title() == 'three.xdot - Dot Viewer'
+    assert w.zoom_to_fit_on_resize
+    assert w.x == approx(w.graph.width / 2)
+    assert w.y == approx(w.graph.height / 2)
+
+
+#
+# Printing
+#
+
+def test_print(win, monkeypatch):
+    w = win.dotwidget
+    calls = []
+
+    def run(op, action, parent):
+        calls.append((action, parent, op.get_print_settings()))
+        # What the print dialog would do
+        op.set_print_settings(Gtk.PrintSettings())
+        return Gtk.PrintOperationResult.APPLY
+
+    monkeypatch.setattr(Gtk.PrintOperation, 'run', run)
+    monkeypatch.setattr(DotWidget, 'print_settings', None)
+    key(win, Gdk.KEY_p)
+    assert calls == [(Gtk.PrintOperationAction.PRINT_DIALOG, win, None)]
+    settings = w.print_settings
+    assert settings is not None
+    # The settings are reused next time
+    key(win, Gdk.KEY_p)
+    assert calls[1][2] is settings
+
+
+def test_print_draws_page(win):
+    w = win.dotwidget
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 640, 480)
+
+    class FakePrintContext:
+        def get_cairo_context(self):
+            return cairo.Context(surface)
+
+    op = Gtk.PrintOperation()
+    assert w.begin_print(op, FakePrintContext())
+    w.draw_page(op, FakePrintContext(), 0)
+    surface.flush()
+    assert any(surface.get_data())
