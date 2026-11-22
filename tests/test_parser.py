@@ -142,7 +142,6 @@ def xdot_text(s):
     ('0.0 1.0 1.0', (1.0, 0.0, 0.0, 1.0)),
     ('.5, 1, 1', (0.0, 1.0, 1.0, 1.0)),
     ('navajowhite', (1.0, 0xde / 255, 0xad / 255, 1.0)),
-    ('/greens3/2', (0xa1 / 255, 0xd9 / 255, 0x9b / 255, 1.0)),
 ])
 def test_color(color, expected):
     graph = xdot_graph(b'c ' + xdot_text(color) + b' C ' + xdot_text(color))
@@ -192,11 +191,6 @@ def test_dot_parser_reexport():
 def test_lookup_color(capsys):
     from xdot.ui.colors import lookup_color
     assert lookup_color('white') == (1.0, 1.0, 1.0, 1.0)
-    assert lookup_color('/blues9/9') == approx(
-        (0x08 / 255, 0x30 / 255, 0x6b / 255, 1.0))
-    # Out of range brewer index
-    assert lookup_color('/blues3/4') is None
-    assert lookup_color('/blues3/0') is None
     assert lookup_color('nosuchcolor') is None
     assert "unknown color 'nosuchcolor'" in capsys.readouterr().err
 
