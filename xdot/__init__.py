@@ -37,7 +37,7 @@ if sys.version_info >= (3, 7):
         if name in ('dot', 'ui'):
             return importlib.import_module("." + name, __name__)
         if name in ('DotWidget', 'DotWindow'):
-            warnings.warn(f"w xdot.{name} is deprecated, use xdot.ui.{name} instead", UserWarning, stacklevel=2)
+            warnings.warn(f"xdot.{name} is deprecated, use xdot.ui.{name} instead", UserWarning, stacklevel=2)
             from . import ui
             return getattr(ui, name)
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
