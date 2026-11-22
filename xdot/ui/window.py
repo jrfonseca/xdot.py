@@ -508,8 +508,7 @@ class DotWidget(Gtk.DrawingArea):
 
     def on_scale_changed(self, gesture, scale):
         point, x, y = gesture.get_point()
-        if point:
-            pos = (x, y)
+        pos = (x, y) if point else None
         new_zoom_ratio = self.zoom_ratio * math.exp(math.log(scale) / 3)
         self.zoom_image(new_zoom_ratio, pos=pos)
 
