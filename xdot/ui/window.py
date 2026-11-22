@@ -122,6 +122,7 @@ class DotWidget(Gtk.DrawingArea):
         except OSError as exc:
             error = '%s: %s' % (self.filter, exc.strerror)
             p = subprocess.CalledProcessError(exc.errno, self.filter, exc.strerror)
+            xdotcode = None
         else:
             xdotcode, error = p.communicate(dotcode)
             error = error.decode()
