@@ -131,6 +131,10 @@ class DotWidget(Gtk.DrawingArea):
             sys.stderr.write(error + '\n')
         if p.returncode != 0:
             self.error_dialog(error)
+            # Still show any partial output, but don't report a second,
+            # confusing, parse error for no output at all.
+            if not xdotcode:
+                return None
         return xdotcode
 
     def _set_dotcode(self, dotcode, filename=None, center=True):
