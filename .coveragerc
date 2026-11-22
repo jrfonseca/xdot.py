@@ -1,0 +1,9 @@
+[run]
+parallel = True
+concurrency =
+    multiprocessing
+source =
+    xdot/
+
+[html]
+directory = htmlcov

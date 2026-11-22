@@ -184,6 +184,11 @@ def main():
     pool = multiprocessing.Pool(multiprocessing.cpu_count(), init_worker)
     results = pool.map(test, args)
 
+    # Let workers exit cleanly, otherwise the pool finalizer terminates them
+    # and coverage loses their data.
+    pool.close()
+    pool.join()
+
     # Exit with status 1 if any failed
     try:
         results.index(False)

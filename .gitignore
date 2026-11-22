@@ -1,7 +1,9 @@
 .*.sw?
 .coverage
 .coverage.*
+.venv
 *.pyc
 *.egg-info
 build
 dist
+htmlcov
