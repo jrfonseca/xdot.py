@@ -176,6 +176,7 @@ class DotWidget(Gtk.DrawingArea):
         parser = XDotParser(xdotcode, graphviz_version=self.graphviz_version)
         self.graph = parser.parse()
         self.zoom_image(self.zoom_ratio, center=center)
+        return True
 
     def reload(self):
         if self.openfilename is not None:
