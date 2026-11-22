@@ -1,0 +1,37 @@
+name: pixels
+
+# Compare the rendering of every test graph between the PR's base and the PR,
+# in the same job, so that only xdot changes can cause differences.  See
+# docs/rendering-tests.md.
+#
+# Intended rendering changes: add the `rendering-change` label to the PR.
+# The job then passes, and the report is still uploaded for review.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+
+  compare:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - name: apt-update
+      run: sudo apt-get update -qq
+    - name: apt-install
+      run: sudo apt-get install -qq -y --no-install-recommends gir1.2-gtk-3.0 librsvg2-common python3-gi python3-gi-cairo python3-numpy python3-packaging graphviz xvfb
+    - name: compare
+      continue-on-error: ${{ contains(github.event.pull_request.labels.*.name, 'rendering-change') }}
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: LANG=C /usr/bin/python3 -W ignore::DeprecationWarning tests/pixel_regression.py run --base "$BASE_SHA"
+    - name: upload-report
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: pixel-report
+        path: build/pixel/report
+        if-no-files-found: ignore
