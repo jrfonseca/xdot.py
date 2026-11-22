@@ -30,7 +30,7 @@ class Pen:
         # set default attributes
         self.color = (0.0, 0.0, 0.0, 1.0)
         self.fillcolor = (0.0, 0.0, 0.0, 1.0)
-        self.linewidth = 1.0
+        self.linewidth = 1.5
         self.fontsize = 14.0
         self.fontname = "Times-Roman"
         self.bold = False
