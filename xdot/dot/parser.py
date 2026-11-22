@@ -60,8 +60,13 @@ class Parser:
 
     def match(self, type):
         if self.lookahead.type != type:
+            if self.lookahead.type == EOF:
+                msg = 'unexpected end of file'
+            else:
+                msg = 'unexpected token {}'.format(
+                    self.lookahead.text.decode('utf-8', 'replace'))
             raise ParseError(
-                msg='unexpected token {}'.format(self.lookahead.text),
+                msg=msg,
                 filename=self.lexer.filename,
                 line=self.lookahead.line,
                 col=self.lookahead.col)
@@ -93,7 +98,7 @@ class DotParser(Parser):
                 self.lexer.filename,
                 self.lookahead.line,
                 self.lookahead.col,
-                self.lookahead.text
+                self.lookahead.text.decode('utf-8', 'replace')
             ))
 
     def parse_graph(self):

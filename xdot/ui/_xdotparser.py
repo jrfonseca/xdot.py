@@ -287,7 +287,7 @@ class XDotParser(DotParser):
         if self.top_graph:
             # Check xdot version
             try:
-                xdotversion = attrs['xdotversion']
+                xdotversion = attrs['xdotversion'].decode('ascii')
             except KeyError:
                 pass
             else:
