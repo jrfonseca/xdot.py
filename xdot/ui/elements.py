@@ -684,10 +684,11 @@ class Edge(Element):
         return None
 
     def get_url(self, x, y, radius):
-        if self.is_inside_begin(x, y, radius) and self.url['head'] is not None:
-            return Url(self, self.url['head'])
-        if self.is_inside_end(x, y, radius) and self.url['tail'] is not None:
+        # The points go from the tail (src) to the head (dst)
+        if self.is_inside_begin(x, y, radius) and self.url['tail'] is not None:
             return Url(self, self.url['tail'])
+        if self.is_inside_end(x, y, radius) and self.url['head'] is not None:
+            return Url(self, self.url['head'])
         if self.is_inside(x, y, radius) and self.url['body'] is not None:
             return Url(self, self.url['body'])
         return None
