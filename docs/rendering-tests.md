@@ -4,7 +4,7 @@ Design notes. They record which approaches were considered and why the current o
 
 ## Problem
 
-`test.py` renders every test graph to a PNG, but only checks that loading and rendering don't raise exceptions or log GLib/GTK warnings. The PNGs are ignored by git (`tests/.gitignore`), so nothing catches a change in what is drawn.
+`tests/test_graphs.py` renders every test graph to a PNG, but only checks that loading and rendering don't raise exceptions or log GLib/GTK warnings. The PNGs are ignored by git (`tests/.gitignore`), so nothing catches a change in what is drawn.
 
 Committing the PNGs as references isn't attractive as is:
 

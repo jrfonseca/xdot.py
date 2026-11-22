@@ -81,7 +81,7 @@ def render_one(job):
 
     Only uses DotWidget.set_dotcode and Graph.draw, which have been stable
     for years, so that it works with old commits too.  The drawing mirrors
-    test.py, but deliberately doesn't import it."""
+    tests/test_graphs.py, but deliberately doesn't import it."""
 
     path, out_path = job
 

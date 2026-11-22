@@ -1,7 +1,4 @@
 [run]
-parallel = True
-concurrency =
-    multiprocessing
 source =
     xdot/
 

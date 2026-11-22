@@ -1,11 +1,21 @@
 # Testing
 
-    ./test.py tests/*.dot
-    ./test.py tests/graphs/*.gv
-
-or simply
+Tests use pytest (`apt install python3-pytest python3-pytest-xdist`) and need a
+display.  Headless, as CI runs them:
 
     .github/scripts/test.sh
+
+which runs `python3 -m pytest -n auto` under `xvfb-run`, and passes any extra
+arguments to pytest.  With a display:
+
+    python3 -m pytest -n auto
+    python3 -m pytest tests/test_graphs.py -k issue_94
+    python3 -m pytest tests/test_ui.py::test_pan
+    python3 -m pytest tests/test_graphs.py --graphs path/to/foo.dot
+
+Coverage report (in `htmlcov/`; needs `apt install python3-pytest-cov`):
+
+    ./test-cov.sh
 
 # Rendering regressions
 

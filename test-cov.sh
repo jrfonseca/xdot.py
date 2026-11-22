@@ -1,13 +1,18 @@
 #!/bin/sh
+# Coverage report for the test suite.  Needs pytest-cov:
+#
+#   apt install python3-pytest-cov
+#
 set -eux
 rm -f .coverage .coverage.*
-LANG=C xvfb-run -a -s '-screen 0 1024x768x24' python3 -m coverage run test.py tests/*.dot tests/graphs/*.gv
-LANG=C xvfb-run -a -s '-screen 0 1024x768x24' python3 -W ignore::DeprecationWarning -m coverage run -m unittest -v tests.test_ui
-python3 -m coverage combine
 if [ -t 0 -a -t 1 -a -t 2 ]
 then
-	python3 -m coverage html
-	xdg-open htmlcov/index.html
+	report=html
 else
-	python3 -m coverage report
+	report=term
+fi
+LANG=C xvfb-run -a -s '-screen 0 1024x768x24' python3 -m pytest -n auto --cov --cov-report=$report "$@"
+if [ $report = html ]
+then
+	xdg-open htmlcov/index.html
 fi
