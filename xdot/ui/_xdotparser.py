@@ -55,6 +55,10 @@ class XDotAttrParser:
 
     def read_code(self):
         pos = self.buf.find(b" ", self.pos)
+        if pos == -1:
+            # Graphviz always ends ops with a space, but hand-written xdot
+            # may not
+            pos = len(self.buf)
         res = self.buf[self.pos:pos]
         self.pos = pos + 1
         self.skip_space()
