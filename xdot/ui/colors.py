@@ -334,8 +334,12 @@ def lookup_color(c):
 
     try:
         dummy, scheme, index = c.split('/')
-        r, g, b = brewer_colors[scheme][int(index)]
-    except (ValueError, KeyError):
+        # Brewer color indices are 1-based
+        index = int(index) - 1
+        if index < 0:
+            raise IndexError(index)
+        r, g, b = brewer_colors[scheme][index]
+    except (ValueError, KeyError, IndexError):
         pass
     else:
         s = 1.0/255.0
