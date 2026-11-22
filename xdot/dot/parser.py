@@ -49,7 +49,7 @@ def __getattr__(name: str):
     if name == "XDotParser":
         from ..ui._xdotparser import XDotParser
         return XDotParser
-    return AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class Parser:
