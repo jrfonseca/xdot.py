@@ -322,8 +322,9 @@ def lookup_color(c):
     try:
         color = Gdk.color_parse(c)
     except ValueError:
-        pass
-    else:
+        # Older PyGObject versions raise instead of returning None
+        color = None
+    if color is not None:
         s = 1.0/65535.0
         r = color.red*s
         g = color.green*s
