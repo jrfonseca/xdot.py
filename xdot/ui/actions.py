@@ -22,7 +22,7 @@ from xdot.ui.elements import Jump
 
 from collections.abc import Iterable
 
-class DragAction(object):
+class DragAction:
 
     def __init__(self, dot_widget):
         self.dot_widget = dot_widget

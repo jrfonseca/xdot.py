@@ -23,7 +23,7 @@ gi.require_version('PangoCairo', '1.0')
 from gi.repository import GLib
 
 
-class Animation(object):
+class Animation:
 
     step = 0.03  # seconds
 

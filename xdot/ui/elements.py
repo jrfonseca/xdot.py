@@ -558,7 +558,7 @@ class CompoundShape(Shape):
         return None
 
 
-class Url(object):
+class Url:
 
     def __init__(self, item, url, highlight=None):
         self.item = item
@@ -568,7 +568,7 @@ class Url(object):
         self.highlight = highlight
 
 
-class Jump(object):
+class Jump:
 
     def __init__(self, item, x, y, highlight=None):
         self.item = item
