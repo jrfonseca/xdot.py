@@ -31,6 +31,8 @@ setup(
         """,
     license="LGPL",
 
+    python_requires='>=3.10',
+
     packages=['xdot', 'xdot/dot', 'xdot/ui'],
     entry_points=dict(gui_scripts=['xdot=xdot.__main__:main']),
 
@@ -47,8 +49,8 @@ setup(
         'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
 
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: 3 :: Only',
 
         'Topic :: Multimedia :: Graphics :: Viewers',
