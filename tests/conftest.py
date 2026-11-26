@@ -74,7 +74,7 @@ GLib.log_set_writer_func(_log_writer, None)
 def pytest_configure(config):
     if Gdk.Display.get_default() is None:
         raise pytest.UsageError(
-            'no display: run under xvfb-run, e.g. .github/scripts/test.sh')
+            'no display: run under xvfb-run, e.g. ./test.sh')
 
 
 @pytest.fixture(autouse=True)

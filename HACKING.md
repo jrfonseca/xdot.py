@@ -3,7 +3,7 @@
 Tests use pytest (`apt install python3-pytest python3-pytest-xdist`) and need a
 display.  Headless, as CI runs them:
 
-    .github/scripts/test.sh
+    ./test.sh
 
 which runs `python3 -m pytest -n auto` under `xvfb-run`, and passes any extra
 arguments to pytest.  With a display:

@@ -17,7 +17,7 @@ jobs:
     - name: build
       run: python3 setup.py sdist
     - name: test
-      run: .github/scripts/test.sh
+      run: ./test.sh
 
   ubuntu-24_04:
     runs-on: ubuntu-24.04
@@ -32,7 +32,7 @@ jobs:
     - name: build
       run: python3 setup.py sdist
     - name: test
-      run: .github/scripts/test.sh
+      run: ./test.sh
 
   ubuntu-22_04:
     runs-on: ubuntu-22.04
@@ -47,7 +47,7 @@ jobs:
     - name: build
       run: python3 setup.py sdist
     - name: test
-      run: .github/scripts/test.sh
+      run: ./test.sh
     # https://docs.github.com/en/actions/guides/building-and-testing-python#publishing-to-package-registries
     - name: publish-pypi
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
