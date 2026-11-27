@@ -413,11 +413,11 @@ def default_base():
 
 def cmd_run(args):
     if not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY') and \
-       not os.environ.get('PIXEL_REGRESSION_XVFB'):
-        if shutil.which('xvfb-run') is None:
-            raise SystemExit('error: no display and no xvfb-run')
-        env = dict(os.environ, PIXEL_REGRESSION_XVFB='1')
-        cmd = ['xvfb-run', '-a', '-s', '-screen 0 1024x768x24',
+       not os.environ.get('PIXEL_REGRESSION_HEADLESS'):
+        if shutil.which('xwfb-run') is None and shutil.which('xvfb-run') is None:
+            raise SystemExit('error: no display and no xwfb-run or xvfb-run')
+        env = dict(os.environ, PIXEL_REGRESSION_HEADLESS='1')
+        cmd = [os.path.join(REPO, 'tests', 'headless.sh'),
                sys.executable, SCRIPT] + sys.argv[1:]
         return subprocess.run(cmd, env=env).returncode
 

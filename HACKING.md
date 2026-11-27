@@ -5,7 +5,8 @@ display.  Headless, as CI runs them:
 
     ./test.sh
 
-which runs `python3 -m pytest -n auto` under `xvfb-run`, and passes any extra
+which runs `python3 -m pytest -n auto` under `tests/headless.sh` (`xwfb-run`, or
+`xvfb-run` where xwayland-run is not packaged), and passes any extra
 arguments to pytest.  Inside a Docker container that reproduces a CI job (the
 Ubuntu 26.04 one by default; the apt packages are read from
 `.github/workflows/build.yml`):
@@ -34,7 +35,7 @@ working tree:
     tests/pixel_regression.py run --base HEAD~1 --head HEAD tests/issue_94.dot
 
 It exits with status 1 if any image changed, and writes a side-by-side report
-to `build/pixel/report/index.html`.  It runs under `xvfb-run` automatically
+to `build/pixel/report/index.html`.  It runs under `tests/headless.sh` automatically
 when there is no display.  Pull requests run the same check in CI; label the PR
 `rendering-change` when a change is intended.
 

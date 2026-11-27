@@ -39,7 +39,7 @@ fi
 
 image="xdot-test:ubuntu-$release"
 
-# xauth is needed by xvfb-run, and is preinstalled on GitHub runners
+# xauth is needed by xwfb-run and xvfb-run, and is preinstalled on GitHub runners
 docker build -q -t "$image" - >/dev/null <<EOF
 FROM ubuntu:$release
 ENV DEBIAN_FRONTEND=noninteractive
@@ -55,7 +55,8 @@ else
     tty=
 fi
 
-# --init: xvfb-run hangs waiting for Xvfb's ready signal when it is PID 1
+# --init: xvfb-run hangs waiting for Xvfb's ready signal when it is PID 1, and
+# xwfb-run kills its process group on exit
 exec docker run --rm -i $tty --init \
     --user "$(id -u):$(id -g)" \
     -e HOME=/tmp \

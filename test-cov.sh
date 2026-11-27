@@ -11,7 +11,7 @@ then
 else
 	report=term
 fi
-LANG=C xvfb-run -a -s '-screen 0 1024x768x24' python3 -m pytest -n auto --cov --cov-report=$report "$@"
+LANG=C tests/headless.sh python3 -m pytest -n auto --cov --cov-report=$report "$@"
 if [ $report = html ]
 then
 	xdg-open htmlcov/index.html

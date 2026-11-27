@@ -17,13 +17,13 @@
 
 """Interaction tests for DotWidget/DotWindow.
 
-These run in-process against a real window (use xvfb-run when headless),
+These run in-process against a real window (use tests/headless.sh when headless),
 inject synthetic GDK events through Gtk.main_do_event, so that the regular
 GTK signal dispatch takes place, and then check the widget state.
 
 Run with:
 
-    xvfb-run -a python3 -m pytest tests/test_ui.py
+    tests/headless.sh python3 -m pytest tests/test_ui.py
 """
 
 
