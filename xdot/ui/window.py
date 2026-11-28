@@ -63,6 +63,8 @@ class DotWidget(Gtk.DrawingArea):
 
         self.graph = Graph()
         self.openfilename = None
+        # Source of the graph being shown (dot or xdot), for exporting
+        self.dotcode = None
 
         self.set_can_focus(True)
 
@@ -161,6 +163,7 @@ class DotWidget(Gtk.DrawingArea):
                 self.last_mtime = os.stat(filename).st_mtime
             self.mtime_changed = False
             self.openfilename = filename
+            self.dotcode = dotcode
             return True
 
     def set_xdotcode(self, xdotcode, center=True):
@@ -175,6 +178,9 @@ class DotWidget(Gtk.DrawingArea):
 
         parser = XDotParser(xdotcode, graphviz_version=self.graphviz_version)
         self.graph = parser.parse()
+        # xdot is dot too, so it can be exported as is.  set_dotcode
+        # replaces it with the original dot code.
+        self.dotcode = xdotcode
         self.zoom_image(self.zoom_ratio, center=center)
         return True
 
@@ -823,13 +829,14 @@ class DotWindow(Gtk.Window):
             self.dotwidget.filter or 'dot',
             '-T' + format_,
             '-o', filename,
-            self.dotwidget.openfilename,
         ]
-        subprocess.check_call(cmd)
+        # Feed the code being shown, as there is no file to read when it
+        # came from standard input, and the file may have changed since.
+        subprocess.run(cmd, input=self.dotwidget.dotcode, check=True)
 
     def on_export(self, action):
         
-        if self.dotwidget.openfilename is None:
+        if self.dotwidget.dotcode is None:
             return
         
         default_filter = "PNG image"
@@ -857,9 +864,10 @@ class DotWindow(Gtk.Window):
         chooser.set_default_response(Gtk.ResponseType.OK)
         chooser.set_current_folder(self.last_open_dir)
         
-        openfilename = os.path.basename(self.dotwidget.openfilename)
-        openfileroot = os.path.splitext(openfilename)[0]
-        chooser.set_current_name(openfileroot)
+        if self.dotwidget.openfilename is not None:
+            openfilename = os.path.basename(self.dotwidget.openfilename)
+            openfileroot = os.path.splitext(openfilename)[0]
+            chooser.set_current_name(openfileroot)
 
         for name, ext in output_formats.items():
             filter_ = Gtk.FileFilter()

@@ -720,7 +720,57 @@ def test_export_dialog(file_win, tmp_path, monkeypatch):
     assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
 
 
-def test_export_without_file(win, monkeypatch):
+@pytest.fixture
+def fake_export_dialog(monkeypatch, tmp_path):
+    """Make the export dialog answer OK with tmp_path/exported, and record
+    the name it suggested."""
+    seen = []
+
+    def run(chooser):
+        seen.append(chooser.get_current_name())
+        return Gtk.ResponseType.OK
+
+    monkeypatch.setattr(Gtk.FileChooserDialog, 'run', run)
+    monkeypatch.setattr(Gtk.FileChooserDialog, 'get_filename',
+                        lambda chooser: str(tmp_path / 'exported'))
+    return seen
+
+
+def test_export_without_file(win, fake_export_dialog, tmp_path):
+    # As with `xdot -`: there is no file to export from, nor a name to suggest
+    win.actiongroup.get_action('Export').activate()
+    pump()
+    assert fake_export_dialog == ['']
+    assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
+
+
+def test_export_xdot_without_file(make_window, fake_export_dialog, tmp_path):
+    # As with `xdot -n -`
+    win = make_window(b'digraph {}')
+    win.set_filter(None)
+    win.set_dotcode(subprocess.check_output(['dot', '-Txdot'], input=SIMPLE))
+    pump()
+    assert len(win.dotwidget.graph.nodes) == 2
+    win.actiongroup.get_action('Export').activate()
+    pump()
+    assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
+
+
+def test_export_shown_graph(file_win, tmp_path):
+    # What is exported is the graph shown, even if the file has changed since
+    shown = len(file_win.dotwidget.graph.nodes)
+    file_win.path.write_bytes(b'digraph { x -> y -> z }')
+    file_win.export_file(str(tmp_path / 'out'), 'plain')
+    nodes = [line for line in (tmp_path / 'out.plain').read_text().splitlines()
+             if line.startswith('node ')]
+    assert len(nodes) == shown
+
+
+def test_export_nothing(make_window, monkeypatch):
+    win = make_window(b'not a graph')
+    assert win.errors
+    assert win.dotwidget.dotcode is None
+
     def run(chooser):
         raise AssertionError('no dialog expected')
     monkeypatch.setattr(Gtk.FileChooserDialog, 'run', run)
