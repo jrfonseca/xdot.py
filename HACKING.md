@@ -23,7 +23,7 @@ With a display:
 
 Coverage report (in `htmlcov/`; needs `apt install python3-pytest-cov`):
 
-    ./test-cov.sh
+    ./coverage.sh
 
 # Rendering regressions
 
