@@ -13,11 +13,15 @@ jobs:
     - name: apt-update
       run: sudo apt-get update -qq
     - name: apt-install
-      run: sudo apt-get install -qq -y --no-install-recommends gir1.2-gtk-3.0 librsvg2-common python3-gi python3-gi-cairo python3-numpy python3-packaging python3-setuptools python3-pytest python3-pytest-xdist graphviz libgvplugin-neato-layout8 xwayland-run weston twine
+      run: sudo apt-get install -qq -y --no-install-recommends gir1.2-gtk-3.0 librsvg2-common python3-gi python3-gi-cairo python3-numpy python3-packaging python3-setuptools python3-pytest python3-pytest-cov python3-pytest-xdist graphviz libgvplugin-neato-layout8 xwayland-run weston twine
     - name: build
       run: python3 setup.py sdist
     - name: test
-      run: ./test.sh
+      run: ./test.sh --cov --cov-report=xml
+    - uses: codecov/codecov-action@v7
+      if: github.repository == 'jrfonseca/xdot.py'
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   ubuntu-24_04:
     runs-on: ubuntu-24.04

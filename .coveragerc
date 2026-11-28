@@ -1,6 +1,5 @@
 [run]
-source =
-    xdot/
-
-[html]
-directory = htmlcov
+# Measure xdot only, not the tests.  Relative paths let Codecov map the
+# report onto the repository.
+source = xdot
+relative_files = True

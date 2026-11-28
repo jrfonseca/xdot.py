@@ -1,6 +1,9 @@
 About _xdot.py_
 =================
 
+[![Build Status](https://github.com/jrfonseca/xdot.py/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/jrfonseca/xdot.py/actions/workflows/build.yml)
+[![codecov](https://codecov.io/gh/jrfonseca/xdot.py/branch/main/graph/badge.svg)](https://codecov.io/gh/jrfonseca/xdot.py)
+
 _xdot.py_ is an interactive viewer for graphs written in [Graphviz](http://www.graphviz.org/)'s [dot language](http://www.graphviz.org/doc/info/lang.html).
 
 It uses internally the GraphViz's [xdot output format](http://www.graphviz.org/doc/info/output.html#d:xdot) as an intermediate format, [Python GTK bindings](https://pygobject.readthedocs.io), and [Cairo](https://cairographics.org/) for rendering.

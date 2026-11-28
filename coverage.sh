@@ -1,18 +1,21 @@
 #!/bin/sh
-# Coverage report for the test suite.  Needs pytest-cov:
 #
-#   apt install python3-pytest-cov
+# Run the test suite with coverage, opening an HTML report when interactive.
+# Needs pytest-cov (apt install python3-pytest-cov).
 #
-set -eux
+# Usage: ./coverage.sh [pytest options...]
+#
+set -eu
+cd "$(dirname "$0")"
 rm -f .coverage .coverage.*
-if [ -t 0 -a -t 1 -a -t 2 ]
+if [ -t 0 ] && [ -t 1 ] && [ -t 2 ]
 then
-	report=html
+    report=html
 else
-	report=term
+    report=term
 fi
-LANG=C tests/headless.sh python3 -m pytest -n auto --cov --cov-report=$report "$@"
+./test.sh --cov --cov-report=$report "$@"
 if [ $report = html ]
 then
-	xdg-open htmlcov/index.html
+    xdg-open htmlcov/index.html
 fi
