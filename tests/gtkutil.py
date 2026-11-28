@@ -22,6 +22,8 @@ dispatch takes place."""
 
 import time
 
+import cairo
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
@@ -83,13 +85,31 @@ def button(widget, type_, x, y, button=1, state=0):
     pump()
 
 
-def motion(widget, x, y, state=0):
+def motion(widget, x, y, state=0, is_hint=False):
     ev = _new_event(Gdk.EventType.MOTION_NOTIFY, widget.get_window(), _pointer())
     ev.x, ev.y = float(x), float(y)
-    ev.is_hint = 0
+    ev.is_hint = int(is_hint)
     ev.state = Gdk.ModifierType(state)
     Gtk.main_do_event(ev)
     pump()
+
+
+def draw_now(widget):
+    """Draw widget synchronously onto an image surface, and return it."""
+    alloc = widget.get_allocation()
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, alloc.width, alloc.height)
+    cr = cairo.Context(surface)
+    widget.draw(cr)
+    surface.flush()
+    return surface
+
+
+def pixel(surface, x, y):
+    """(r, g, b) of an ARGB32 surface pixel."""
+    data = surface.get_data()
+    offset = int(y) * surface.get_stride() + int(x) * 4
+    b, g, r = data[offset], data[offset + 1], data[offset + 2]
+    return r, g, b
 
 
 def click(widget, x, y, button_=1, state=0):

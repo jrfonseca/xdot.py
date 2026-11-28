@@ -45,7 +45,7 @@ from xdot.ui import actions, animation
 from xdot.ui.actions import TooltipContext
 
 from tests.gtkutil import pump, button, motion, click, drag, scroll, key, \
-    graph_to_window, window_center, wait_animation
+    graph_to_window, window_center, wait_animation, draw_now, pixel
 
 
 #
@@ -222,6 +222,62 @@ def test_zoom_area(win):
     assert w.y == approx((gy0 + gy1) / 2)
 
 
+def test_zoom_area_draws_rectangle(win):
+    w = win.dotwidget
+    set_view(w, 100.0, 100.0, 1.0)
+    outside = pixel(draw_now(w), 140, 120)
+    button(w, Gdk.EventType.BUTTON_PRESS, 100, 100,
+           state=Gdk.ModifierType.SHIFT_MASK)
+    motion(w, 180, 140, Gdk.ModifierType.SHIFT_MASK |
+           Gdk.ModifierType.BUTTON1_MASK)
+    surface = draw_now(w)
+    key(win, Gdk.KEY_Escape)
+    # The selection is filled with translucent blue
+    r, g, b = pixel(surface, 140, 120)
+    assert b > r and b > g
+    assert (r, g, b) != outside
+    # and nothing is drawn beyond it
+    assert pixel(surface, 200, 160) == pixel(draw_now(w), 200, 160)
+
+
+@pytest.fixture
+def fake_pointer(monkeypatch):
+    """Make Gdk.Window.get_device_position, which motion hint events are
+    resolved with, report the position given to the returned setter."""
+    position = {}
+
+    def get_device_position(window, device):
+        return window, position['x'], position['y'], position['state']
+
+    monkeypatch.setattr(Gdk.Window, 'get_device_position', get_device_position)
+
+    def set_position(x, y, state=0):
+        position.update(x=float(x), y=float(y), state=Gdk.ModifierType(state))
+
+    return set_position
+
+
+def test_pan_motion_hint(win, fake_pointer):
+    w = win.dotwidget
+    set_view(w, 100.0, 100.0, 2.0)
+    button(w, Gdk.EventType.BUTTON_PRESS, 100, 100)
+    # A hint event's coordinates are stale; the pointer position counts
+    fake_pointer(150, 130, Gdk.ModifierType.BUTTON1_MASK)
+    motion(w, 0, 0, Gdk.ModifierType.BUTTON1_MASK, is_hint=True)
+    button(w, Gdk.EventType.BUTTON_RELEASE, 150, 130,
+           state=Gdk.ModifierType.BUTTON1_MASK)
+    assert w.x == approx(100.0 - 50 / 2.0)
+    assert w.y == approx(100.0 - 30 / 2.0)
+
+
+def test_hover_motion_hint(win, fake_pointer):
+    w = win.dotwidget
+    a = node(w, 'a')
+    fake_pointer(*graph_to_window(w, a.x, a.y))
+    motion(w, 0, 0, is_hint=True)
+    assert w.highlight == {a}
+
+
 def test_escape_aborts_drag(win):
     w = win.dotwidget
     set_view(w, 100.0, 100.0, 1.0)
@@ -373,6 +429,21 @@ def test_hover_url_highlights(url_win):
 #
 # Hover
 #
+
+def test_tooltip_custom_widgets(tooltip_win):
+    # The API that sample_custom_tooltip.py uses
+    image = Gtk.Image()
+    TooltipContext.add_widget('test_image', image)
+    try:
+        assert TooltipContext.get_widget('test_image') is image
+        assert image in TooltipContext._tooltip_box.get_children()
+    finally:
+        TooltipContext.remove_widget('test_image')
+    assert image not in TooltipContext._tooltip_box.get_children()
+    with pytest.raises(KeyError):
+        TooltipContext.get_widget('test_image')
+    assert tooltip_label() in TooltipContext._tooltip_box.get_children()
+
 
 def test_node_tooltip_is_plain_text(tooltip_win):
     # Regression test for 233a70d

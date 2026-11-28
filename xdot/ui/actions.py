@@ -109,7 +109,7 @@ class TooltipContext():
     @staticmethod
     def remove_widget(name):
         TooltipContext.initialize()
-        widget = TooltipContext._widgets[name]
+        widget = TooltipContext._widgets.pop(name)
         TooltipContext._tooltip_box.remove(widget)
 
     @staticmethod
