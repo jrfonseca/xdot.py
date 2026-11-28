@@ -129,6 +129,15 @@ See included `sample.py` script for an example of how to embedded _xdot.py_ into
 
 [![Screenshot](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample_small.png)](https://raw.github.com/wiki/jrfonseca/xdot.py/xdot-sample.png)
 
+`DotWindow`'s toolbar no longer uses the deprecated `Gtk.UIManager`/`Gtk.Action` API:
+
+  * `DotWindow.uimanager` is gone; the toolbar is `DotWindow.toolbar`, a plain `Gtk.Toolbar`.
+  * `DotWindow.actiongroup` is a `Gio.SimpleActionGroup`, inserted into the window as `win`, with the actions `open`, `export`, `reload`, `print`, `zoom-in`, `zoom-out`, `zoom-fit`, `zoom-100`, `back`, `forward` and `find-next`.  To add a button, add a `Gio.SimpleAction` to it and insert a `Gtk.ToolButton` with `set_action_name('win.<name>')` into the toolbar.
+  * `DotWindow.back_action` and `DotWindow.forward_action` are `Gio.SimpleAction`s (`get_enabled`/`set_enabled` instead of `get_sensitive`/`set_sensitive`).
+  * `DotWindow` no longer sets the X11 window class to `xdot`; the standalone application still does.
+
+Handlers such as `on_open`, `on_export` and `on_reload` still take the action as their only argument, so overriding them keeps working.
+
 Download
 ========
 

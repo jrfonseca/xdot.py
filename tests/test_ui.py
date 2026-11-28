@@ -45,7 +45,8 @@ from xdot.ui import actions, animation
 from xdot.ui.actions import TooltipContext
 
 from tests.gtkutil import pump, button, motion, click, drag, scroll, key, \
-    graph_to_window, window_center, wait_animation, draw_now, pixel
+    graph_to_window, window_center, wait_animation, press_widget, \
+    draw_now, pixel
 
 
 #
@@ -158,6 +159,27 @@ def click_recorder_win(make_window):
 @pytest.fixture(params=[(512, 480), (300, 300)], ids=['default', 'narrow'])
 def find_key_win(request, make_window):
     return make_window(SIMPLE, size=request.param)
+
+
+def tool_button(win, action_name):
+    for item in win.toolbar.get_children():
+        if isinstance(item, Gtk.ToolButton) and item.get_action_name() == 'win.' + action_name:
+            return item
+    raise KeyError(action_name)
+
+
+def button_sensitive(win, action_name):
+    return tool_button(win, action_name).is_sensitive()
+
+
+def open_overflow_menu(win):
+    internal = []
+    win.toolbar.forall(internal.append)
+    arrow, = [child for child in internal if isinstance(child, Gtk.ToggleButton)]
+    alloc = arrow.get_allocation()
+    # The toolbar pops up its menu from the arrow's button-press handler
+    press_widget(arrow, alloc.x + alloc.width / 2, alloc.y + alloc.height / 2)
+    assert arrow.get_active()
 
 
 #
@@ -321,8 +343,8 @@ def test_click_edge_jumps_to_source(win):
     click(w, *window_center(w))
     assert w.history_back == [(mx, my)]
     assert history == [(True, False)]
-    assert win.back_action.get_sensitive()
-    assert not win.forward_action.get_sensitive()
+    assert win.back_action.get_enabled()
+    assert not win.forward_action.get_enabled()
 
     wait_animation(w)
     a = node(w, 'a')
@@ -361,19 +383,19 @@ def test_back_forward(win):
     click(w, *window_center(w))
     wait_animation(w)
 
-    win.back_action.activate()
+    win.back_action.activate(None)
     wait_animation(w)
     assert w.x == approx(mx)
     assert w.y == approx(my)
-    assert not win.back_action.get_sensitive()
-    assert win.forward_action.get_sensitive()
+    assert not win.back_action.get_enabled()
+    assert win.forward_action.get_enabled()
 
-    win.forward_action.activate()
+    win.forward_action.activate(None)
     wait_animation(w)
     assert w.x == approx(a.x)
     assert w.y == approx(a.y)
-    assert win.back_action.get_sensitive()
-    assert not win.forward_action.get_sensitive()
+    assert win.back_action.get_enabled()
+    assert not win.forward_action.get_enabled()
 
 
 @pytest.mark.parametrize('zoom', [1.0, 4.0])
@@ -530,7 +552,7 @@ def test_zoom_to_fit_key(win):
 
 
 def test_toggle_toolbar(win):
-    toolbar = win.uimanager.get_widget('/ToolBar')
+    toolbar = win.toolbar
     assert toolbar.get_visible()
     key(win, Gdk.KEY_t)
     assert not toolbar.get_visible()
@@ -565,24 +587,47 @@ def test_zoom_actions(win):
     w = win.dotwidget
 
     def action(name):
-        win.actiongroup.get_action(name).activate()
+        win.actiongroup.activate_action(name, None)
 
     inc = DotWidget.ZOOM_INCREMENT
     set_view(w, 0.0, 0.0, 1.0)
-    action('ZoomIn')
+    action('zoom-in')
     assert w.zoom_ratio == approx(inc)
-    action('ZoomOut')
-    action('ZoomOut')
+    action('zoom-out')
+    action('zoom-out')
     assert w.zoom_ratio == approx(1 / inc)
-    action('Zoom100')
+    action('zoom-100')
     assert w.zoom_ratio == approx(1.0)
-    action('ZoomFit')
+    action('zoom-fit')
     assert w.zoom_to_fit_on_resize
 
 
 def test_history_buttons_initially_disabled(win):
-    assert not win.back_action.get_sensitive()
-    assert not win.forward_action.get_sensitive()
+    assert not win.back_action.get_enabled()
+    assert not win.forward_action.get_enabled()
+    assert not button_sensitive(win, 'back')
+    assert not button_sensitive(win, 'forward')
+    assert button_sensitive(win, 'reload')
+
+
+def test_overflow_menu(make_window):
+    # In a narrow window most buttons overflow into the toolbar menu, whose
+    # items must follow the action state and activate the action.
+    win = make_window(SIMPLE, size=(300, 300))
+    w = win.dotwidget
+    open_overflow_menu(win)
+
+    back = tool_button(win, 'back').get_proxy_menu_item('gtk-tool-button-menu-id')
+    assert back.get_mapped()
+    assert not back.get_sensitive()
+    win.back_action.set_enabled(True)
+    assert back.get_sensitive()
+
+    zoom_in = tool_button(win, 'zoom-in').get_proxy_menu_item('gtk-tool-button-menu-id')
+    zoom_ratio = w.zoom_ratio
+    zoom_in.activate()
+    pump()
+    assert w.zoom_ratio == approx(zoom_ratio * DotWidget.ZOOM_INCREMENT)
 
 
 #
@@ -610,13 +655,13 @@ def test_find(find_win):
     wait_animation(w)
     assert w.x == approx(apple.x)
     assert w.y == approx(apple.y)
-    assert win.find_next_toolitem.get_sensitive()
+    assert button_sensitive(win, 'find-next')
 
-    win.actiongroup.get_action('FindNext').activate()
+    win.actiongroup.activate_action('find-next', None)
     wait_animation(w)
     assert w.x == approx(apricot.x)
     assert w.y == approx(apricot.y)
-    assert not win.find_next_toolitem.get_sensitive()
+    assert not button_sensitive(win, 'find-next')
 
     entry.set_text('')
     pump()
@@ -708,7 +753,7 @@ def _reload_key(win):
 
 
 def _reload_action(win):
-    win.actiongroup.get_action('Reload').activate()
+    win.actiongroup.activate_action('reload', None)
     pump()
 
 
@@ -785,7 +830,7 @@ def test_export_dialog(file_win, tmp_path, monkeypatch):
     monkeypatch.setattr(Gtk.FileChooserDialog, 'run', run)
     monkeypatch.setattr(Gtk.FileChooserDialog, 'get_filename',
                         lambda chooser: str(tmp_path / 'exported'))
-    file_win.actiongroup.get_action('Export').activate()
+    file_win.actiongroup.activate_action('export', None)
     pump()
     assert seen == [('g', 'PNG image')]
     assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
@@ -809,7 +854,7 @@ def fake_export_dialog(monkeypatch, tmp_path):
 
 def test_export_without_file(win, fake_export_dialog, tmp_path):
     # As with `xdot -`: there is no file to export from, nor a name to suggest
-    win.actiongroup.get_action('Export').activate()
+    win.actiongroup.activate_action('export', None)
     pump()
     assert fake_export_dialog == ['']
     assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
@@ -822,7 +867,7 @@ def test_export_xdot_without_file(make_window, fake_export_dialog, tmp_path):
     win.set_dotcode(subprocess.check_output(['dot', '-Txdot'], input=SIMPLE))
     pump()
     assert len(win.dotwidget.graph.nodes) == 2
-    win.actiongroup.get_action('Export').activate()
+    win.actiongroup.activate_action('export', None)
     pump()
     assert (tmp_path / 'exported.png').read_bytes().startswith(b'\x89PNG')
 
@@ -845,7 +890,7 @@ def test_export_nothing(make_window, monkeypatch):
     def run(chooser):
         raise AssertionError('no dialog expected')
     monkeypatch.setattr(Gtk.FileChooserDialog, 'run', run)
-    win.actiongroup.get_action('Export').activate()
+    win.actiongroup.activate_action('export', None)
     pump()
 
 

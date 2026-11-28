@@ -84,7 +84,7 @@ def test_no_file(run_main):
     assert win.dotwidget.filter == 'dot'
     assert win.get_title() == 'Dot Viewer'
     assert win.get_default_size() == (610, 610)
-    assert win.uimanager.get_widget('/ToolBar').get_visible()
+    assert win.toolbar.get_visible()
 
 
 def test_file(run_main, dot_file):
@@ -134,4 +134,4 @@ def test_bad_arguments(run_main, args, capsys):
 
 def test_hide_toolbar(run_main):
     win = run_main('--hide-toolbar')
-    assert not win.uimanager.get_widget('/ToolBar').get_visible()
+    assert not win.toolbar.get_visible()

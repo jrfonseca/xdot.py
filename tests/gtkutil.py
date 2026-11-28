@@ -85,6 +85,18 @@ def button(widget, type_, x, y, button=1, state=0):
     pump()
 
 
+def press_widget(widget, x, y, button=1):
+    """Send a button press straight to a widget's event handlers.
+
+    For widgets without a GdkWindow of their own, which Gtk.main_do_event
+    can't target.  x, y are relative to widget.get_window()."""
+    ev = _new_event(Gdk.EventType.BUTTON_PRESS, widget.get_window(), _pointer())
+    ev.x, ev.y = float(x), float(y)
+    ev.button = button
+    widget.event(ev)
+    pump()
+
+
 def motion(widget, x, y, state=0, is_hint=False):
     ev = _new_event(Gdk.EventType.MOTION_NOTIFY, widget.get_window(), _pointer())
     ev.x, ev.y = float(x), float(y)

@@ -128,8 +128,9 @@ class TooltipContext():
         TooltipContext._tooltip_box.show()
         TooltipContext._tooltip_window.show()
 
-        pointer = TooltipContext._tooltip_window.get_screen().get_root_window().get_pointer()
-        TooltipContext._tooltip_window.move(pointer.x + 15, pointer.y + 10)
+        display = TooltipContext._tooltip_window.get_display()
+        _, x, y = display.get_default_seat().get_pointer().get_position()
+        TooltipContext._tooltip_window.move(x + 15, y + 10)
 
 class NullAction(DragAction):
     def on_motion_notify(self, event):
@@ -144,7 +145,8 @@ class NullAction(DragAction):
         TooltipContext.reset()
         TooltipContext.set_parent(dot_widget)
         if item is not None:
-            dot_widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.HAND2))
+            dot_widget.get_window().set_cursor(
+                Gdk.Cursor.new_for_display(dot_widget.get_display(), Gdk.CursorType.HAND2))
             dot_widget.set_highlight(item.highlight)
 
             dot_widget.on_hover(dot_widget.get_element(x, y), event, TooltipContext)
@@ -156,7 +158,8 @@ class NullAction(DragAction):
 class PanAction(DragAction):
 
     def start(self):
-        self.dot_widget.get_window().set_cursor(Gdk.Cursor(Gdk.CursorType.FLEUR))
+        self.dot_widget.get_window().set_cursor(
+            Gdk.Cursor.new_for_display(self.dot_widget.get_display(), Gdk.CursorType.FLEUR))
 
     def drag(self, deltax, deltay):
         self.dot_widget.x += deltax / self.dot_widget.zoom_ratio

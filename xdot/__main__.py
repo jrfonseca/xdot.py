@@ -19,7 +19,7 @@
 import argparse
 import sys
 
-from .ui.window import DotWindow, Gtk
+from .ui.window import DotWindow, Gdk, GLib, Gtk
 
 
 def main():
@@ -74,6 +74,10 @@ Shortcuts:
         except ValueError:
             parser.error('invalid window geometry')
 
+    # Keep WM_CLASS as "xdot", "xdot" (and the Wayland app id "xdot")
+    GLib.set_prgname('xdot')
+    Gdk.set_program_class('xdot')
+
     win = DotWindow(width=width, height=height)
     win.connect('delete-event', Gtk.main_quit)
     win.set_filter(options.filter)
@@ -84,7 +88,7 @@ Shortcuts:
             win.open_file(inputfile)
 
     if options.hide_toolbar:
-        win.uimanager.get_widget('/ToolBar').set_visible(False)
+        win.toolbar.set_visible(False)
 
     if sys.platform != 'win32':
         # Reset KeyboardInterrupt SIGINT handler, so that glib loop can be stopped by it

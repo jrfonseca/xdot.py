@@ -31,9 +31,9 @@ class MyDotWindow(xdot.ui.DotWindow):
 
     def on_url_clicked(self, widget, url, event):
         dialog = Gtk.MessageDialog(
-            parent=self,
+            transient_for=self,
             buttons=Gtk.ButtonsType.OK,
-            message_format="%s clicked" % url)
+            text="%s clicked" % url)
         dialog.connect('response', lambda dialog, response: dialog.destroy())
         dialog.run()
         return True

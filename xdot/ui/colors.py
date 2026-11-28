@@ -23,17 +23,12 @@ def lookup_color(c):
     """
     import sys
     import gi
-    gi.require_version('Gtk', '3.0')
-    gi.require_version('PangoCairo', '1.0')
+    gi.require_version('Pango', '1.0')
 
-    from gi.repository import Gdk
+    from gi.repository import Pango
 
-    try:
-        color = Gdk.color_parse(c)
-    except ValueError:
-        # Older PyGObject versions raise instead of returning None
-        color = None
-    if color is not None:
+    color = Pango.Color()
+    if color.parse(c):
         s = 1.0/65535.0
         r = color.red*s
         g = color.green*s

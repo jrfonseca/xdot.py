@@ -30,6 +30,7 @@ from gi.repository import GLib
 from gi.repository import GObject
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import Gio
 
 # See http://www.graphviz.org/pub/scm/graphviz-cairo/plugin/cairo/gvrender_cairo.c
 
@@ -369,7 +370,7 @@ class DotWidget(Gtk.DrawingArea):
         if event.keyval == Gdk.KEY_t:
             # toggle toolbar visibility
             win = widget.get_toplevel()
-            toolbar = win.uimanager.get_widget("/ToolBar")
+            toolbar = win.toolbar
             toolbar.set_visible(not toolbar.get_visible())
             return True
         if event.keyval == Gdk.KEY_w:
@@ -577,51 +578,7 @@ class DotWidget(Gtk.DrawingArea):
         return self.graph.get_jump(x, y, self.hit_radius, to_dst)
 
 
-class FindMenuToolAction(Gtk.Action):
-    __gtype_name__ = "FindMenuToolAction"
-
-    def __init__(self, *args, **kwargs):
-        Gtk.Action.__init__(self, *args, **kwargs)
-        self._tool_items = []
-
-    def do_create_tool_item(self):
-        # Hold a Python reference to each proxy so PyGObject doesn't warn
-        # about returning an unowned widget; drop it once GTK destroys it.
-        item = Gtk.ToolItem()
-        self._tool_items.append(item)
-        item.connect('destroy', self._tool_items.remove)
-        return item
-
-
 class DotWindow(Gtk.Window):
-
-    ui = '''
-    <ui>
-        <toolbar name="ToolBar">
-            <!-- Find comes first because the toolbar overflows from the end,
-                 and unlike the buttons the find entry has no overflow menu
-                 item. -->
-            <toolitem name="Find" action="Find"/>
-            <separator name="FindNextSeparator"/>
-            <toolitem action="FindNext"/>
-            <separator name="FindStatusSeparator"/>
-            <toolitem name="FindStatus" action="FindStatus"/>
-            <separator/>
-            <toolitem action="Open"/>
-            <toolitem action="Export"/>
-            <toolitem action="Reload"/>
-            <toolitem action="Print"/>
-            <separator/>
-            <toolitem action="Back"/>
-            <toolitem action="Forward"/>
-            <separator/>
-            <toolitem action="ZoomIn"/>
-            <toolitem action="ZoomOut"/>
-            <toolitem action="ZoomFit"/>
-            <toolitem action="Zoom100"/>
-        </toolbar>
-    </ui>
-    '''
 
     base_title = 'Dot Viewer'
 
@@ -634,93 +591,103 @@ class DotWindow(Gtk.Window):
 
         window.set_title(self.base_title)
         window.set_default_size(width, height)
-        window.set_wmclass("xdot", "xdot")
-        vbox = Gtk.VBox()
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         window.add(vbox)
 
         self.dotwidget = widget or DotWidget()
         self.dotwidget.connect("error", lambda e, m: self.error_dialog(m))
         self.dotwidget.connect("history", self.on_history)
 
-        # Create a UIManager instance
-        uimanager = self.uimanager = Gtk.UIManager()
+        # Actions, activated by the toolbar buttons as "win.<name>"
+        self.actiongroup = Gio.SimpleActionGroup()
+        self.insert_action_group('win', self.actiongroup)
 
-        # Add the accelerator group to the toplevel window
-        accelgroup = uimanager.get_accel_group()
-        window.add_accel_group(accelgroup)
+        self._add_action('open', self.on_open)
+        self._add_action('export', self.on_export)
+        self._add_action('reload', self.on_reload)
+        self._add_action('print', self.dotwidget.on_print)
+        self._add_action('zoom-in', self.dotwidget.on_zoom_in)
+        self._add_action('zoom-out', self.dotwidget.on_zoom_out)
+        self._add_action('zoom-fit', self.dotwidget.on_zoom_fit)
+        self._add_action('zoom-100', self.dotwidget.on_zoom_100)
+        self.back_action = self._add_action('back', self.dotwidget.on_go_back, enabled=False)
+        self.forward_action = self._add_action('forward', self.dotwidget.on_go_forward, enabled=False)
+        self.find_next_action = self._add_action('find-next', self.on_find_next, enabled=False)
 
-        # Create an ActionGroup
-        actiongroup = Gtk.ActionGroup('Actions')
-        self.actiongroup = actiongroup
+        self.toolbar = toolbar = Gtk.Toolbar()
 
-        # Create actions
-        actiongroup.add_actions((
-            ('Open', Gtk.STOCK_OPEN, None, None, "Open dot-file", self.on_open),
-            ('Export', Gtk.STOCK_SAVE_AS, None, None, "Export graph to other format", self.on_export),
-            ('Reload', Gtk.STOCK_REFRESH, None, None, "Reload graph", self.on_reload),
-            ('Print', Gtk.STOCK_PRINT, None, None,
-             "Prints the currently visible part of the graph", self.dotwidget.on_print),
-            ('ZoomIn', Gtk.STOCK_ZOOM_IN, None, None, "Zoom in", self.dotwidget.on_zoom_in),
-            ('ZoomOut', Gtk.STOCK_ZOOM_OUT, None, None, "Zoom out", self.dotwidget.on_zoom_out),
-            ('ZoomFit', Gtk.STOCK_ZOOM_FIT, None, None, "Fit zoom", self.dotwidget.on_zoom_fit),
-            ('Zoom100', Gtk.STOCK_ZOOM_100, None, None, "Reset zoom level", self.dotwidget.on_zoom_100),
-            ('FindNext', Gtk.STOCK_GO_FORWARD, 'Next Result', None, 'Move to the next search result', self.on_find_next),
-        ))
+        # Find comes first because the toolbar overflows from the end, and
+        # unlike the buttons the find entry has no overflow menu item.
+        find_toolitem = Gtk.ToolItem()
+        find_toolitem.set_tooltip_text("Find a node by name")
+        self.textentry = Gtk.Entry()
+        self.textentry.set_icon_from_icon_name(Gtk.EntryIconPosition.PRIMARY, 'edit-find')
+        find_toolitem.add(self.textentry)
+        toolbar.insert(find_toolitem, -1)
 
-        self.back_action = Gtk.Action('Back', None, None, Gtk.STOCK_GO_BACK)
-        self.back_action.set_sensitive(False)
-        self.back_action.connect("activate", self.dotwidget.on_go_back)
-        actiongroup.add_action(self.back_action)
+        self._add_separator(draw=False)
+        self.find_next_toolitem = self._add_button(
+            'find-next', 'go-next', 'Next Result', 'Move to the next search result')
+        self._add_separator(draw=False)
 
-        self.forward_action = Gtk.Action('Forward', None, None, Gtk.STOCK_GO_FORWARD)
-        self.forward_action.set_sensitive(False)
-        self.forward_action.connect("activate", self.dotwidget.on_go_forward)
-        actiongroup.add_action(self.forward_action)
+        findstatus_toolitem = Gtk.ToolItem()
+        findstatus_toolitem.set_tooltip_text("Number of results found")
+        self.find_count = Gtk.Label()
+        findstatus_toolitem.add(self.find_count)
+        toolbar.insert(findstatus_toolitem, -1)
 
-        find_action = FindMenuToolAction("Find", None,
-                                         "Find a node by name", None)
-        actiongroup.add_action(find_action)
+        self._add_separator()
+        self._add_button('open', 'document-open', '_Open', 'Open dot-file')
+        self._add_button('export', 'document-save-as', 'Save _As', 'Export graph to other format')
+        self._add_button('reload', 'view-refresh', '_Refresh', 'Reload graph')
+        self._add_button('print', 'document-print', '_Print',
+                         'Prints the currently visible part of the graph')
+        self._add_separator()
+        self._add_button('back', 'go-previous', '_Back', 'Go back')
+        self._add_button('forward', 'go-next', '_Forward', 'Go forward')
+        self._add_separator()
+        self._add_button('zoom-in', 'zoom-in', 'Zoom _In', 'Zoom in')
+        self._add_button('zoom-out', 'zoom-out', 'Zoom _Out', 'Zoom out')
+        self._add_button('zoom-fit', 'zoom-fit-best', 'Best _Fit', 'Fit zoom')
+        self._add_button('zoom-100', 'zoom-original', '_Normal Size', 'Reset zoom level')
 
-        findstatus_action = FindMenuToolAction("FindStatus", None,
-                                               "Number of results found", None)
-        actiongroup.add_action(findstatus_action)
-
-        # Add the actiongroup to the uimanager
-        uimanager.insert_action_group(actiongroup, 0)
-
-        # Add a UI descrption
-        uimanager.add_ui_from_string(self.ui)
-
-        # Create a Toolbar
-        toolbar = uimanager.get_widget('/ToolBar')
         vbox.pack_start(toolbar, False, False, 0)
-
         vbox.pack_start(self.dotwidget, True, True, 0)
 
         self.last_open_dir = "."
 
         self.set_focus(self.dotwidget)
 
-        # Add Find text search
-        find_toolitem = uimanager.get_widget('/ToolBar/Find')
-        self.textentry = Gtk.Entry()
-        self.textentry.set_icon_from_stock(0, Gtk.STOCK_FIND)
-        find_toolitem.add(self.textentry)
-
         self.textentry.set_activates_default(True)
         self.textentry.connect("activate", self.textentry_activate, self.textentry);
         self.textentry.connect("changed", self.textentry_changed, self.textentry);
 
-        uimanager.get_widget('/ToolBar/FindNextSeparator').set_draw(False)
-        uimanager.get_widget('/ToolBar/FindStatusSeparator').set_draw(False)
-        self.find_next_toolitem = uimanager.get_widget('/ToolBar/FindNext')
-        self.find_next_toolitem.set_sensitive(False)
-
-        self.find_count = Gtk.Label()
-        findstatus_toolitem = uimanager.get_widget('/ToolBar/FindStatus')
-        findstatus_toolitem.add(self.find_count)
-
         self.show_all()
+
+    def _add_action(self, name, handler, enabled=True):
+        action = Gio.SimpleAction.new(name, None)
+        # Handlers take the action as their only argument.
+        action.connect('activate', lambda action, parameter: handler(action))
+        action.set_enabled(enabled)
+        self.actiongroup.add_action(action)
+        return action
+
+    def _add_button(self, action_name, icon_name, label, tooltip):
+        button = Gtk.ToolButton(icon_name=icon_name, label=label, use_underline=True)
+        button.set_tooltip_text(tooltip)
+        button.set_action_name('win.' + action_name)
+        # The tool item itself must follow the action's state, because it sets
+        # the sensitivity of its overflow menu item.
+        action = self.actiongroup.lookup_action(action_name)
+        action.bind_property('enabled', button, 'sensitive',
+                             GObject.BindingFlags.SYNC_CREATE)
+        self.toolbar.insert(button, -1)
+        return button
+
+    def _add_separator(self, draw=True):
+        separator = Gtk.SeparatorToolItem()
+        separator.set_draw(draw)
+        self.toolbar.insert(separator, -1)
 
     def find_text(self, entry_text):
         found_items = []
@@ -738,7 +705,7 @@ class DotWindow(Gtk.Window):
     def textentry_changed(self, widget, entry):
         self.find_count.set_label('')
         self.find_index = 0
-        self.find_next_toolitem.set_sensitive(False)
+        self.find_next_action.set_enabled(False)
         entry_text = entry.get_text()
         dot_widget = self.dotwidget
         if not entry_text:
@@ -752,7 +719,7 @@ class DotWindow(Gtk.Window):
 
     def textentry_activate(self, widget, entry):
         self.find_index = 0
-        self.find_next_toolitem.set_sensitive(False)
+        self.find_next_action.set_enabled(False)
         entry_text = entry.get_text()
         dot_widget = self.dotwidget
         if not entry_text:
@@ -764,7 +731,7 @@ class DotWindow(Gtk.Window):
         dot_widget.set_highlight(found_items, search=True)
         if found_items:
             dot_widget.animate_to(found_items[0].x, found_items[0].y)
-        self.find_next_toolitem.set_sensitive(len(found_items) > 1)
+        self.find_next_action.set_enabled(len(found_items) > 1)
 
     def set_filter(self, filter):
         self.dotwidget.set_filter(filter)
@@ -794,13 +761,11 @@ class DotWindow(Gtk.Window):
             self.error_dialog(str(ex))
 
     def on_open(self, action):
-        chooser = Gtk.FileChooserDialog(parent=self,
+        chooser = Gtk.FileChooserDialog(transient_for=self,
                                         title="Open Graphviz File",
-                                        action=Gtk.FileChooserAction.OPEN,
-                                        buttons=(Gtk.STOCK_CANCEL,
-                                                 Gtk.ResponseType.CANCEL,
-                                                 Gtk.STOCK_OPEN,
-                                                 Gtk.ResponseType.OK))
+                                        action=Gtk.FileChooserAction.OPEN)
+        chooser.add_buttons("_Cancel", Gtk.ResponseType.CANCEL,
+                            "_Open", Gtk.ResponseType.OK)
         chooser.set_default_response(Gtk.ResponseType.OK)
         chooser.set_current_folder(self.last_open_dir)
         filter = Gtk.FileFilter()
@@ -853,14 +818,12 @@ class DotWindow(Gtk.Window):
             "XFIG image": "fig",
             "xdot file": "xdot",
         }
-        buttons = (
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-            Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
         chooser = Gtk.FileChooserDialog(
-            parent=self,
+            transient_for=self,
             title="Export to other file format.",
-            action=Gtk.FileChooserAction.SAVE,
-            buttons=buttons) 
+            action=Gtk.FileChooserAction.SAVE)
+        chooser.add_buttons("_Cancel", Gtk.ResponseType.CANCEL,
+                            "_Save", Gtk.ResponseType.OK)
         chooser.set_default_response(Gtk.ResponseType.OK)
         chooser.set_current_folder(self.last_open_dir)
         
@@ -890,9 +853,9 @@ class DotWindow(Gtk.Window):
         self.dotwidget.reload()
 
     def error_dialog(self, message):
-        dlg = Gtk.MessageDialog(parent=self,
-                                type=Gtk.MessageType.ERROR,
-                                message_format=message,
+        dlg = Gtk.MessageDialog(transient_for=self,
+                                message_type=Gtk.MessageType.ERROR,
+                                text=message,
                                 buttons=Gtk.ButtonsType.OK)
         dlg.set_title(self.base_title)
         dlg.run()
@@ -905,8 +868,8 @@ class DotWindow(Gtk.Window):
         found_items = self.find_text(entry_text)
         found_item = found_items[self.find_index]
         self.dotwidget.animate_to(found_item.x, found_item.y)
-        self.find_next_toolitem.set_sensitive(len(found_items) > self.find_index + 1)
+        self.find_next_action.set_enabled(len(found_items) > self.find_index + 1)
 
     def on_history(self, action, has_back, has_forward):
-        self.back_action.set_sensitive(has_back)
-        self.forward_action.set_sensitive(has_forward)
+        self.back_action.set_enabled(has_back)
+        self.forward_action.set_enabled(has_forward)
